@@ -1,0 +1,7 @@
+agrobr>=2.0
+pandas
+numpy
+scikit-learn>=1.3
+pyarrow
+geopandas   # malha municipal (centroides) via agrobr.ibge.malha_municipal
+pytest

@@ -1,0 +1,15 @@
+[project]
+name = "agro-ml"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "agrobr>=2.0",
+    "geopandas>=1.2.0",
+    "numpy>=2.5.4",
+    "pandas>=3.0.6",
+    "pyarrow>=26.0.0",
+    "pytest>=9.1.1",
+    "scikit-learn>=1.3",
+]
