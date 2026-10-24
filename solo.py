@@ -23,6 +23,9 @@ def tabela_solo_municipal(perfis: pd.DataFrame, ref: pd.DataFrame) -> pd.DataFra
     """
     p = perfis.copy()
     p["nome_norm"] = p["municipio"].map(normalizar_nome)
+    for c in set(COLS_QUIMICAS + COLS_TEXTURA + COLS_OUTRAS + ["profundidade"]):
+        if c in p:
+            p[c] = pd.to_numeric(p[c], errors="coerce")
     h = p["horizonte"].astype(str).str.strip() if "horizonte" in p else pd.Series("", index=p.index)
     p["_sup"] = h.str.match(r"^[Aa]", na=False)
     p["_org"] = h.str.match(r"^[OoHh]", na=False)  # horizontes orgânicos distorcem C.org/CTC

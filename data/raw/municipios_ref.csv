@@ -1,0 +1,646 @@
+cod_ibge,municipio,lat,lon,nome_norm
+3500105,Adamantina,-21.5767,-51.0568,adamantina
+3500204,Adolfo,-21.2887,-49.6533,adolfo
+3500303,Aguaí,-22.05,-47.0403,aguai
+3500402,Águas da Prata,-21.9137,-46.6917,aguas da prata
+3500501,Águas de Lindóia,-22.4748,-46.6037,aguas de lindoia
+3500550,Águas de Santa Bárbara,-22.858,-49.261,aguas de santa barbara
+3500600,Águas de São Pedro,-22.5986,-47.8761,aguas de sao pedro
+3500709,Agudos,-22.5719,-49.1088,agudos
+3500758,Alambari,-23.5489,-47.8691,alambari
+3500808,Alfredo Marcondes,-21.935,-51.3957,alfredo marcondes
+3500907,Altair,-20.5333,-49.0939,altair
+3501004,Altinópolis,-21.018,-47.3862,altinopolis
+3501103,Alto Alegre,-21.6125,-50.1921,alto alegre
+3501152,Alumínio,-23.533,-47.2812,aluminio
+3501202,Álvares Florence,-20.2896,-49.9203,alvares florence
+3501301,Álvares Machado,-22.1315,-51.5149,alvares machado
+3501400,Álvaro de Carvalho,-22.0865,-49.734,alvaro de carvalho
+3501509,Alvinlândia,-22.4526,-49.7585,alvinlandia
+3501608,Americana,-22.7232,-47.2891,americana
+3501707,Américo Brasiliense,-21.7223,-48.0324,americo brasiliense
+3501806,Américo de Campos,-20.2894,-49.768,americo de campos
+3501905,Amparo,-22.6991,-46.7987,amparo
+3502002,Analândia,-22.1211,-47.678,analandia
+3502101,Andradina,-20.8356,-51.3297,andradina
+3502200,Angatuba,-23.4368,-48.4593,angatuba
+3502309,Anhembi,-22.8001,-48.1747,anhembi
+3502408,Anhumas,-22.362,-51.4278,anhumas
+3502507,Aparecida,-22.9142,-45.2372,aparecida
+3502606,Aparecida d'Oeste,-20.4788,-50.922,aparecida d'oeste
+3502705,Apiaí,-24.4215,-48.8174,apiai
+3502754,Araçariguama,-23.4344,-47.0724,aracariguama
+3502804,Araçatuba,-21.1139,-50.5745,aracatuba
+3502903,Araçoiaba da Serra,-23.5439,-47.6515,aracoiaba da serra
+3503000,Aramina,-20.145,-47.8206,aramina
+3503109,Arandu,-23.1777,-49.064,arandu
+3503158,Arapeí,-22.6729,-44.4386,arapei
+3503208,Araraquara,-21.7916,-48.1813,araraquara
+3503307,Araras,-22.3462,-47.3239,araras
+3503356,Arco-Íris,-21.7663,-50.4309,arco-iris
+3503406,Arealva,-22.0763,-48.9819,arealva
+3503505,Areias,-22.6731,-44.7124,areias
+3503604,Areiópolis,-22.6318,-48.6528,areiopolis
+3503703,Ariranha,-21.1857,-48.7792,ariranha
+3503802,Artur Nogueira,-22.5612,-47.1322,artur nogueira
+3503901,Arujá,-23.386,-46.3191,aruja
+3503950,Aspásia,-20.1836,-50.728,aspasia
+3504008,Assis,-22.6017,-50.4208,assis
+3504107,Atibaia,-23.1233,-46.5868,atibaia
+3504206,Auriflama,-20.6441,-50.58,auriflama
+3504305,Avaí,-22.1872,-49.3162,avai
+3504404,Avanhandava,-21.4605,-49.9474,avanhandava
+3504503,Avaré,-23.0752,-48.894,avare
+3504602,Bady Bassitt,-20.9315,-49.4376,bady bassitt
+3504701,Balbinos,-21.8924,-49.3331,balbinos
+3504800,Bálsamo,-20.7096,-49.5518,balsamo
+3504909,Bananal,-22.7338,-44.3345,bananal
+3505005,Barão de Antonina,-23.5829,-49.572,barao de antonina
+3505104,Barbosa,-21.2907,-49.9222,barbosa
+3505203,Bariri,-22.0668,-48.7188,bariri
+3505302,Barra Bonita,-22.4795,-48.5417,barra bonita
+3505351,Barra do Chapéu,-24.4438,-49.0853,barra do chapeu
+3505401,Barra do Turvo,-24.8887,-48.427,barra do turvo
+3505500,Barretos,-20.5142,-48.6519,barretos
+3505609,Barrinha,-21.2325,-48.0951,barrinha
+3505708,Barueri,-23.5053,-46.8772,barueri
+3505807,Bastos,-21.9502,-50.744,bastos
+3505906,Batatais,-20.8678,-47.5748,batatais
+3506003,Bauru,-22.254,-49.1261,bauru
+3506102,Bebedouro,-20.9405,-48.5107,bebedouro
+3506201,Bento de Abreu,-21.3318,-50.862,bento de abreu
+3506300,Bernardino de Campos,-23.0308,-49.4919,bernardino de campos
+3506359,Bertioga,-23.7598,-46.03,bertioga
+3506409,Bilac,-21.4278,-50.4793,bilac
+3506508,Birigui,-21.2616,-50.351,birigui
+3506607,Biritiba Mirim,-23.6242,-46.0213,biritiba mirim
+3506706,Boa Esperança do Sul,-21.935,-48.4636,boa esperanca do sul
+3506805,Bocaina,-22.1054,-48.5291,bocaina
+3506904,Bofete,-23.129,-48.2859,bofete
+3507001,Boituva,-23.2876,-47.675,boituva
+3507100,Bom Jesus dos Perdões,-23.1725,-46.479,bom jesus dos perdoes
+3507159,Bom Sucesso de Itararé,-24.3159,-49.1646,bom sucesso de itarare
+3507209,Borá,-22.2442,-50.5021,bora
+3507308,Boracéia,-22.1701,-48.7883,boraceia
+3507407,Borborema,-21.6108,-49.072,borborema
+3507456,Borebi,-22.6807,-48.9923,borebi
+3507506,Botucatu,-22.8634,-48.4683,botucatu
+3507605,Bragança Paulista,-22.9384,-46.5559,braganca paulista
+3507704,Braúna,-21.5531,-50.3394,brauna
+3507753,Brejo Alegre,-21.1766,-50.2098,brejo alegre
+3507803,Brodowski,-21.0495,-47.6278,brodowski
+3507902,Brotas,-22.2733,-48.0812,brotas
+3508009,Buri,-23.752,-48.5753,buri
+3508108,Buritama,-21.0491,-50.2002,buritama
+3508207,Buritizal,-20.2093,-47.6929,buritizal
+3508306,Cabrália Paulista,-22.4895,-49.373,cabralia paulista
+3508405,Cabreúva,-23.3013,-47.0802,cabreuva
+3508504,Caçapava,-23.1037,-45.7133,cacapava
+3508603,Cachoeira Paulista,-22.7024,-44.9917,cachoeira paulista
+3508702,Caconde,-21.5395,-46.617,caconde
+3508801,Cafelândia,-21.7311,-49.5487,cafelandia
+3508900,Caiabu,-21.9498,-51.2239,caiabu
+3509007,Caieiras,-23.3759,-46.7452,caieiras
+3509106,Caiuá,-21.8015,-51.9866,caiua
+3509205,Cajamar,-23.3514,-46.872,cajamar
+3509254,Cajati,-24.772,-48.195,cajati
+3509304,Cajobi,-20.8737,-48.8388,cajobi
+3509403,Cajuru,-21.276,-47.3103,cajuru
+3509452,Campina do Monte Alegre,-23.6068,-48.442,campina do monte alegre
+3509502,Campinas,-22.8838,-47.0438,campinas
+3509601,Campo Limpo Paulista,-23.2179,-46.7601,campo limpo paulista
+3509700,Campos do Jordão,-22.7016,-45.5331,campos do jordao
+3509809,Campos Novos Paulista,-22.6109,-50.0103,campos novos paulista
+3509908,Cananéia,-25.0183,-48.0087,cananeia
+3509957,Canas,-22.7301,-45.0414,canas
+3510005,Cândido Mota,-22.8087,-50.4217,candido mota
+3510104,Cândido Rodrigues,-21.3428,-48.6286,candido rodrigues
+3510153,Canitar,-23.0187,-49.7919,canitar
+3510203,Capão Bonito,-24.0392,-48.2898,capao bonito
+3510302,Capela do Alto,-23.4674,-47.731,capela do alto
+3510401,Capivari,-22.9807,-47.478,capivari
+3510500,Caraguatatuba,-23.6398,-45.4886,caraguatatuba
+3510609,Carapicuíba,-23.55,-46.8419,carapicuiba
+3510708,Cardoso,-20.0672,-49.9476,cardoso
+3510807,Casa Branca,-21.8005,-47.0881,casa branca
+3510906,Cássia dos Coqueiros,-21.2633,-47.1441,cassia dos coqueiros
+3511003,Castilho,-20.8976,-51.5703,castilho
+3511102,Catanduva,-21.1338,-48.9637,catanduva
+3511201,Catiguá,-21.0628,-49.0528,catigua
+3511300,Cedral,-20.9139,-49.2639,cedral
+3511409,Cerqueira César,-23.0593,-49.1438,cerqueira cesar
+3511508,Cerquilho,-23.1871,-47.7571,cerquilho
+3511607,Cesário Lange,-23.2165,-47.9039,cesario lange
+3511706,Charqueada,-22.5302,-47.7462,charqueada
+3511904,Clementina,-21.5703,-50.4601,clementina
+3512001,Colina,-20.7462,-48.5889,colina
+3512100,Colômbia,-20.2669,-48.7217,colombia
+3512209,Conchal,-22.3693,-47.1411,conchal
+3512308,Conchas,-22.9656,-48.0471,conchas
+3512407,Cordeirópolis,-22.4796,-47.4147,cordeiropolis
+3512506,Coroados,-21.3756,-50.3034,coroados
+3512605,Coronel Macedo,-23.6301,-49.3069,coronel macedo
+3512704,Corumbataí,-22.2364,-47.6111,corumbatai
+3512803,Cosmópolis,-22.6516,-47.1864,cosmopolis
+3512902,Cosmorama,-20.4425,-49.7746,cosmorama
+3513009,Cotia,-23.6752,-46.9605,cotia
+3513108,Cravinhos,-21.3397,-47.7446,cravinhos
+3513207,Cristais Paulista,-20.3713,-47.4009,cristais paulista
+3513306,Cruzália,-22.738,-50.7691,cruzalia
+3513405,Cruzeiro,-22.5514,-45.0063,cruzeiro
+3513504,Cubatão,-23.8659,-46.4082,cubatao
+3513603,Cunha,-23.0529,-44.9421,cunha
+3513702,Descalvado,-21.8812,-47.6546,descalvado
+3513801,Diadema,-23.6972,-46.6114,diadema
+3513850,Dirce Reis,-20.4485,-50.6281,dirce reis
+3513900,Divinolândia,-21.6617,-46.6974,divinolandia
+3514007,Dobrada,-21.5161,-48.3573,dobrada
+3514106,Dois Córregos,-22.3959,-48.3405,dois corregos
+3514205,Dolcinópolis,-20.1172,-50.5283,dolcinopolis
+3514304,Dourado,-22.1173,-48.3335,dourado
+3514403,Dracena,-21.5567,-51.584,dracena
+3514502,Duartina,-22.3933,-49.4134,duartina
+3514601,Dumont,-21.2471,-47.9798,dumont
+3514700,Echaporã,-22.4482,-50.2006,echapora
+3514809,Eldorado,-24.495,-48.2336,eldorado
+3514908,Elias Fausto,-23.0706,-47.3707,elias fausto
+3514924,Elisiário,-21.1613,-49.0921,elisiario
+3514957,Embaúba,-20.9529,-48.8475,embauba
+3515004,Embu das Artes,-23.6513,-46.8515,embu das artes
+3515103,Embu-Guaçu,-23.8543,-46.8307,embu-guacu
+3515129,Emilianópolis,-21.801,-51.4722,emilianopolis
+3515152,Engenheiro Coelho,-22.4871,-47.1748,engenheiro coelho
+3515186,Espírito Santo do Pinhal,-22.1925,-46.7933,espirito santo do pinhal
+3515194,Espírito Santo do Turvo,-22.6709,-49.4329,espirito santo do turvo
+3515202,Estrela d'Oeste,-20.2657,-50.4115,estrela d'oeste
+3515301,Estrela do Norte,-22.4856,-51.6691,estrela do norte
+3515350,Euclides da Cunha Paulista,-22.519,-52.5886,euclides da cunha paulista
+3515400,Fartura,-23.3902,-49.5197,fartura
+3515509,Fernandópolis,-20.2718,-50.283,fernandopolis
+3515608,Fernando Prestes,-21.3103,-48.6957,fernando prestes
+3515657,Fernão,-22.3658,-49.5424,fernao
+3515707,Ferraz de Vasconcelos,-23.561,-46.3739,ferraz de vasconcelos
+3515806,Flora Rica,-21.6984,-51.3743,flora rica
+3515905,Floreal,-20.6696,-50.1548,floreal
+3516002,Flórida Paulista,-21.54,-51.1707,florida paulista
+3516101,Florínea,-22.8812,-50.6953,florinea
+3516200,Franca,-20.5552,-47.3811,franca
+3516309,Francisco Morato,-23.2737,-46.7235,francisco morato
+3516408,Franco da Rocha,-23.3142,-46.7358,franco da rocha
+3516507,Gabriel Monteiro,-21.4996,-50.5647,gabriel monteiro
+3516606,Gália,-22.3205,-49.5778,galia
+3516705,Garça,-22.231,-49.6896,garca
+3516804,Gastão Vidigal,-20.8043,-50.2028,gastao vidigal
+3516853,Gavião Peixoto,-21.7916,-48.4479,gaviao peixoto
+3516903,General Salgado,-20.6383,-50.4158,general salgado
+3517000,Getulina,-21.7833,-50.0279,getulina
+3517109,Glicério,-21.3403,-50.1989,glicerio
+3517208,Guaiçara,-21.5695,-49.7628,guaicara
+3517307,Guaimbê,-21.8785,-49.8606,guaimbe
+3517406,Guaíra,-20.314,-48.3641,guaira
+3517505,Guapiaçu,-20.7429,-49.1899,guapiacu
+3517604,Guapiara,-24.2125,-48.5558,guapiara
+3517703,Guará,-20.4826,-47.7752,guara
+3517802,Guaraçaí,-21.0864,-51.2795,guaracai
+3517901,Guaraci,-20.3748,-49.0027,guaraci
+3518008,Guarani d'Oeste,-20.0668,-50.3446,guarani d'oeste
+3518107,Guarantã,-21.9161,-49.5884,guaranta
+3518206,Guararapes,-21.2852,-50.6951,guararapes
+3518305,Guararema,-23.4276,-46.0586,guararema
+3518404,Guaratinguetá,-22.7935,-45.2328,guaratingueta
+3518503,Guareí,-23.3705,-48.2191,guarei
+3518602,Guariba,-21.3959,-48.2266,guariba
+3518701,Guarujá,-23.951,-46.2353,guaruja
+3518800,Guarulhos,-23.4027,-46.4549,guarulhos
+3518859,Guatapará,-21.4533,-47.9799,guatapara
+3518909,Guzolândia,-20.6285,-50.7136,guzolandia
+3519006,Herculândia,-21.9623,-50.3731,herculandia
+3519055,Holambra,-22.6303,-47.065,holambra
+3519071,Hortolândia,-22.8784,-47.2077,hortolandia
+3519105,Iacanga,-21.8909,-49.0396,iacanga
+3519204,Iacri,-21.7999,-50.6195,iacri
+3519253,Iaras,-22.8191,-49.1068,iaras
+3519303,Ibaté,-21.9509,-48.0273,ibate
+3519402,Ibirá,-21.0747,-49.2203,ibira
+3519501,Ibirarema,-22.8133,-50.0769,ibirarema
+3519600,Ibitinga,-21.7929,-48.8478,ibitinga
+3519709,Ibiúna,-23.8024,-47.2152,ibiuna
+3519808,Icém,-20.3672,-49.1853,icem
+3519907,Iepê,-22.6486,-51.0572,iepe
+3520004,Igaraçu do Tietê,-22.5417,-48.5746,igaracu do tiete
+3520103,Igarapava,-20.0637,-47.6825,igarapava
+3520202,Igaratá,-23.1348,-46.1504,igarata
+3520301,Iguape,-24.5495,-47.4744,iguape
+3520400,Ilhabela,-23.8501,-45.3292,ilhabela
+3520426,Ilha Comprida,-24.859,-47.7154,ilha comprida
+3520442,Ilha Solteira,-20.4314,-51.259,ilha solteira
+3520509,Indaiatuba,-23.1061,-47.2025,indaiatuba
+3520608,Indiana,-22.1332,-51.2626,indiana
+3520707,Indiaporã,-19.9479,-50.2637,indiapora
+3520806,Inúbia Paulista,-21.739,-50.9574,inubia paulista
+3520905,Ipaussu,-23.0651,-49.6081,ipaussu
+3521002,Iperó,-23.4045,-47.6291,ipero
+3521101,Ipeúna,-22.4239,-47.716,ipeuna
+3521150,Ipiguá,-20.648,-49.4035,ipigua
+3521200,Iporanga,-24.5127,-48.5463,iporanga
+3521309,Ipuã,-20.4175,-48.0665,ipua
+3521408,Iracemápolis,-22.5937,-47.5242,iracemapolis
+3521507,Irapuã,-21.2677,-49.3974,irapua
+3521606,Irapuru,-21.4842,-51.3465,irapuru
+3521705,Itaberá,-23.8713,-49.1425,itabera
+3521804,Itaí,-23.4715,-49.0542,itai
+3521903,Itajobi,-21.3555,-49.0537,itajobi
+3522000,Itaju,-21.9516,-48.794,itaju
+3522109,Itanhaém,-24.0919,-46.8347,itanhaem
+3522158,Itaoca,-24.6179,-48.839,itaoca
+3522208,Itapecerica da Serra,-23.7372,-46.8588,itapecerica da serra
+3522307,Itapetininga,-23.6455,-48.1233,itapetininga
+3522406,Itapeva,-23.9141,-48.8717,itapeva
+3522505,Itapevi,-23.5509,-46.9677,itapevi
+3522604,Itapira,-22.432,-46.7721,itapira
+3522653,Itapirapuã Paulista,-24.569,-49.2229,itapirapua paulista
+3522703,Itápolis,-21.5481,-48.8155,itapolis
+3522802,Itaporanga,-23.6729,-49.4585,itaporanga
+3522901,Itapuí,-22.2508,-48.7014,itapui
+3523008,Itapura,-20.5951,-51.4406,itapura
+3523107,Itaquaquecetuba,-23.4615,-46.3339,itaquaquecetuba
+3523206,Itararé,-24.0805,-49.3035,itarare
+3523305,Itariri,-24.2927,-47.1281,itariri
+3523404,Itatiba,-23.0067,-46.8143,itatiba
+3523503,Itatinga,-23.1537,-48.6294,itatinga
+3523602,Itirapina,-22.2946,-47.8341,itirapina
+3523701,Itirapuã,-20.6576,-47.1694,itirapua
+3523800,Itobi,-21.749,-46.922,itobi
+3523909,Itu,-23.3071,-47.2846,itu
+3524006,Itupeva,-23.1465,-47.0684,itupeva
+3524105,Ituverava,-20.3295,-47.8096,ituverava
+3524204,Jaborandi,-20.65,-48.416,jaborandi
+3524303,Jaboticabal,-21.2183,-48.2879,jaboticabal
+3524402,Jacareí,-23.2989,-45.9905,jacarei
+3524501,Jaci,-20.945,-49.5812,jaci
+3524600,Jacupiranga,-24.7774,-48.0539,jacupiranga
+3524709,Jaguariúna,-22.692,-47.0128,jaguariuna
+3524808,Jales,-20.2858,-50.5541,jales
+3524907,Jambeiro,-23.2793,-45.7106,jambeiro
+3525003,Jandira,-23.5441,-46.8997,jandira
+3525102,Jardinópolis,-20.9921,-47.826,jardinopolis
+3525201,Jarinu,-23.112,-46.7213,jarinu
+3525300,Jaú,-22.2961,-48.556,jau
+3525409,Jeriquara,-20.3401,-47.5742,jeriquara
+3525508,Joanópolis,-22.9388,-46.2092,joanopolis
+3525607,João Ramalho,-22.2779,-50.7991,joao ramalho
+3525706,José Bonifácio,-21.0894,-49.7793,jose bonifacio
+3525805,Júlio Mesquita,-21.9729,-49.7934,julio mesquita
+3525854,Jumirim,-23.0996,-47.7881,jumirim
+3525904,Jundiaí,-23.1946,-46.913,jundiai
+3526001,Junqueirópolis,-21.4489,-51.4351,junqueiropolis
+3526100,Juquiá,-24.2137,-47.6523,juquia
+3526209,Juquitiba,-23.9552,-47.0246,juquitiba
+3526308,Lagoinha,-23.0858,-45.2068,lagoinha
+3526407,Laranjal Paulista,-23.0122,-47.8657,laranjal paulista
+3526506,Lavínia,-21.1508,-51.0326,lavinia
+3526605,Lavrinhas,-22.5203,-44.8889,lavrinhas
+3526704,Leme,-22.1722,-47.3376,leme
+3526803,Lençóis Paulista,-22.6761,-48.825,lencois paulista
+3526902,Limeira,-22.5985,-47.3637,limeira
+3527009,Lindóia,-22.5134,-46.655,lindoia
+3527108,Lins,-21.6498,-49.6829,lins
+3527207,Lorena,-22.794,-45.06,lorena
+3527256,Lourdes,-20.9491,-50.234,lourdes
+3527306,Louveira,-23.084,-46.9376,louveira
+3527405,Lucélia,-21.6441,-50.9917,lucelia
+3527504,Lucianópolis,-22.4734,-49.5503,lucianopolis
+3527603,Luís Antônio,-21.5527,-47.7819,luis antonio
+3527702,Luiziânia,-21.6726,-50.3508,luiziania
+3527801,Lupércio,-22.4272,-49.817,lupercio
+3527900,Lutécia,-22.3253,-50.3855,lutecia
+3528007,Macatuba,-22.4871,-48.7194,macatuba
+3528106,Macaubal,-20.8379,-49.975,macaubal
+3528205,Macedônia,-20.0981,-50.1815,macedonia
+3528304,Magda,-20.5965,-50.23,magda
+3528403,Mairinque,-23.508,-47.2293,mairinque
+3528502,Mairiporã,-23.3173,-46.5613,mairipora
+3528601,Manduri,-23.047,-49.3036,manduri
+3528700,Marabá Paulista,-22.1277,-52.0566,maraba paulista
+3528809,Maracaí,-22.6523,-50.7454,maracai
+3528858,Marapoama,-21.2555,-49.1378,marapoama
+3528908,Mariápolis,-21.7792,-51.1718,mariapolis
+3529005,Marília,-22.1778,-49.9831,marilia
+3529104,Marinópolis,-20.4799,-50.8323,marinopolis
+3529203,Martinópolis,-22.1723,-51.1234,martinopolis
+3529302,Matão,-21.6101,-48.4301,matao
+3529401,Mauá,-23.6662,-46.4464,maua
+3529500,Mendonça,-21.194,-49.5702,mendonca
+3529609,Meridiano,-20.3982,-50.1867,meridiano
+3529658,Mesópolis,-19.9575,-50.6154,mesopolis
+3529708,Miguelópolis,-20.1847,-48.1055,miguelopolis
+3529807,Mineiros do Tietê,-22.4633,-48.4332,mineiros do tiete
+3529906,Miracatu,-24.1951,-47.3947,miracatu
+3530003,Mira Estrela,-19.9518,-50.1243,mira estrela
+3530102,Mirandópolis,-21.0811,-51.1305,mirandopolis
+3530201,Mirante do Paranapanema,-22.3492,-51.998,mirante do paranapanema
+3530300,Mirassol,-20.8277,-49.5043,mirassol
+3530409,Mirassolândia,-20.595,-49.487,mirassolandia
+3530508,Mococa,-21.4495,-47.033,mococa
+3530607,Mogi das Cruzes,-23.5696,-46.1861,mogi das cruzes
+3530706,Mogi Guaçu,-22.2321,-47.029,mogi guacu
+3530805,Mogi Mirim,-22.4513,-46.9884,mogi mirim
+3530904,Mombuca,-22.9427,-47.602,mombuca
+3531001,Monções,-20.8631,-50.0795,moncoes
+3531100,Mongaguá,-24.0702,-46.6681,mongagua
+3531209,Monte Alegre do Sul,-22.7043,-46.6677,monte alegre do sul
+3531308,Monte Alto,-21.2593,-48.533,monte alto
+3531407,Monte Aprazível,-20.7375,-49.7658,monte aprazivel
+3531506,Monte Azul Paulista,-20.9089,-48.6813,monte azul paulista
+3531605,Monte Castelo,-21.2549,-51.5714,monte castelo
+3531704,Monteiro Lobato,-22.9366,-45.8043,monteiro lobato
+3531803,Monte Mor,-22.9532,-47.3073,monte mor
+3531902,Morro Agudo,-20.6887,-48.1533,morro agudo
+3532009,Morungaba,-22.8939,-46.7825,morungaba
+3532058,Motuca,-21.5138,-48.1703,motuca
+3532108,Murutinga do Sul,-20.9968,-51.3014,murutinga do sul
+3532157,Nantes,-22.5969,-51.2009,nantes
+3532207,Narandiba,-22.5637,-51.5217,narandiba
+3532306,Natividade da Serra,-23.4151,-45.3814,natividade da serra
+3532405,Nazaré Paulista,-23.1914,-46.3665,nazare paulista
+3532504,Neves Paulista,-20.8705,-49.6465,neves paulista
+3532603,Nhandeara,-20.6731,-50.0468,nhandeara
+3532702,Nipoã,-20.8916,-49.7782,nipoa
+3532801,Nova Aliança,-21.0626,-49.516,nova alianca
+3532827,Nova Campina,-24.1906,-48.9729,nova campina
+3532843,Nova Canaã Paulista,-20.3721,-50.9106,nova canaa paulista
+3532868,Nova Castilho,-20.7778,-50.3458,nova castilho
+3532900,Nova Europa,-21.7743,-48.5497,nova europa
+3533007,Nova Granada,-20.476,-49.3311,nova granada
+3533106,Nova Guataporanga,-21.3224,-51.6454,nova guataporanga
+3533205,Nova Independência,-21.1353,-51.5052,nova independencia
+3533254,Novais,-20.9886,-48.918,novais
+3533304,Nova Luzitânia,-20.8687,-50.2494,nova luzitania
+3533403,Nova Odessa,-22.7841,-47.2852,nova odessa
+3533502,Novo Horizonte,-21.4692,-49.2838,novo horizonte
+3533601,Nuporanga,-20.7049,-47.7291,nuporanga
+3533700,Ocauçu,-22.4381,-49.9379,ocaucu
+3533809,Óleo,-22.9537,-49.383,oleo
+3533908,Olímpia,-20.7052,-48.9596,olimpia
+3534005,Onda Verde,-20.6174,-49.2436,onda verde
+3534104,Oriente,-22.1419,-50.0937,oriente
+3534203,Orindiúva,-20.2016,-49.3555,orindiuva
+3534302,Orlândia,-20.6979,-47.9058,orlandia
+3534401,Osasco,-23.5287,-46.7893,osasco
+3534500,Oscar Bressane,-22.2954,-50.2574,oscar bressane
+3534609,Osvaldo Cruz,-21.7327,-50.8739,osvaldo cruz
+3534708,Ourinhos,-22.9527,-49.8524,ourinhos
+3534757,Ouroeste,-19.9225,-50.402,ouroeste
+3534807,Ouro Verde,-21.5104,-51.7378,ouro verde
+3534906,Pacaembu,-21.4956,-51.2742,pacaembu
+3535002,Palestina,-20.3212,-49.4976,palestina
+3535101,Palmares Paulista,-21.1047,-48.8267,palmares paulista
+3535200,Palmeira d'Oeste,-20.439,-50.7488,palmeira d'oeste
+3535309,Palmital,-22.8288,-50.2209,palmital
+3535408,Panorama,-21.4633,-51.8581,panorama
+3535507,Paraguaçu Paulista,-22.4591,-50.6266,paraguacu paulista
+3535606,Paraibuna,-23.4784,-45.6418,paraibuna
+3535705,Paraíso,-21.0196,-48.7647,paraiso
+3535804,Paranapanema,-23.4385,-48.7952,paranapanema
+3535903,Paranapuã,-20.0638,-50.594,paranapua
+3536000,Parapuã,-21.8529,-50.8217,parapua
+3536109,Pardinho,-23.1022,-48.4018,pardinho
+3536208,Pariquera-Açu,-24.6783,-47.8501,pariquera-acu
+3536257,Parisi,-20.2716,-50.0374,parisi
+3536307,Patrocínio Paulista,-20.7042,-47.2894,patrocinio paulista
+3536406,Paulicéia,-21.1983,-51.7907,pauliceia
+3536505,Paulínia,-22.7484,-47.1451,paulinia
+3536570,Paulistânia,-22.5684,-49.3056,paulistania
+3536604,Paulo de Faria,-20.0666,-49.4634,paulo de faria
+3536703,Pederneiras,-22.3014,-48.8611,pederneiras
+3536802,Pedra Bela,-22.7758,-46.4418,pedra bela
+3536901,Pedranópolis,-20.2101,-50.107,pedranopolis
+3537008,Pedregulho,-20.2056,-47.4391,pedregulho
+3537107,Pedreira,-22.7547,-46.8886,pedreira
+3537156,Pedrinhas Paulista,-22.8169,-50.8024,pedrinhas paulista
+3537206,Pedro de Toledo,-24.1637,-47.1635,pedro de toledo
+3537305,Penápolis,-21.4054,-50.0957,penapolis
+3537404,Pereira Barreto,-20.6777,-51.1065,pereira barreto
+3537503,Pereiras,-23.1205,-47.9788,pereiras
+3537602,Peruíbe,-24.2793,-47.013,peruibe
+3537701,Piacatu,-21.5713,-50.6436,piacatu
+3537800,Piedade,-23.787,-47.4381,piedade
+3537909,Pilar do Sul,-23.8564,-47.7281,pilar do sul
+3538006,Pindamonhangaba,-22.88,-45.4593,pindamonhangaba
+3538105,Pindorama,-21.2098,-48.9116,pindorama
+3538204,Pinhalzinho,-22.7787,-46.5734,pinhalzinho
+3538303,Piquerobi,-21.8527,-51.7316,piquerobi
+3538501,Piquete,-22.5903,-45.1738,piquete
+3538600,Piracaia,-23.0469,-46.3023,piracaia
+3538709,Piracicaba,-22.7265,-47.784,piracicaba
+3538808,Piraju,-23.1869,-49.3661,piraju
+3538907,Pirajuí,-21.9576,-49.4136,pirajui
+3539004,Pirangi,-21.0939,-48.6694,pirangi
+3539103,Pirapora do Bom Jesus,-23.3784,-46.9849,pirapora do bom jesus
+3539202,Pirapozinho,-22.4792,-51.6198,pirapozinho
+3539301,Pirassununga,-21.9959,-47.3899,pirassununga
+3539400,Piratininga,-22.425,-49.1918,piratininga
+3539509,Pitangueiras,-21.0062,-48.2494,pitangueiras
+3539608,Planalto,-21.0012,-49.936,planalto
+3539707,Platina,-22.6252,-50.2127,platina
+3539806,Poá,-23.5305,-46.3468,poa
+3539905,Poloni,-20.7525,-49.82,poloni
+3540002,Pompéia,-22.0292,-50.1877,pompeia
+3540101,Pongaí,-21.7302,-49.3589,pongai
+3540200,Pontal,-20.9846,-48.0644,pontal
+3540259,Pontalinda,-20.4507,-50.5251,pontalinda
+3540309,Pontes Gestal,-20.1748,-49.7574,pontes gestal
+3540408,Populina,-19.9073,-50.5173,populina
+3540507,Porangaba,-23.1739,-48.1174,porangaba
+3540606,Porto Feliz,-23.2303,-47.5169,porto feliz
+3540705,Porto Ferreira,-21.8426,-47.4472,porto ferreira
+3540754,Potim,-22.8253,-45.3032,potim
+3540804,Potirendaba,-21.0755,-49.3917,potirendaba
+3540853,Pracinha,-21.8375,-51.0752,pracinha
+3540903,Pradópolis,-21.3444,-48.0861,pradopolis
+3541000,Praia Grande,-24.0156,-46.5227,praia grande
+3541059,Pratânia,-22.8185,-48.6969,pratania
+3541109,Presidente Alves,-22.1222,-49.4318,presidente alves
+3541208,Presidente Bernardes,-22.1073,-51.6203,presidente bernardes
+3541307,Presidente Epitácio,-21.9107,-52.1749,presidente epitacio
+3541406,Presidente Prudente,-21.9932,-51.3431,presidente prudente
+3541505,Presidente Venceslau,-21.793,-51.8383,presidente venceslau
+3541604,Promissão,-21.5245,-49.8705,promissao
+3541653,Quadra,-23.301,-48.0386,quadra
+3541703,Quatá,-22.2059,-50.6453,quata
+3541802,Queiroz,-21.8006,-50.2453,queiroz
+3541901,Queluz,-22.5043,-44.7853,queluz
+3542008,Quintana,-22.1002,-50.3693,quintana
+3542107,Rafard,-23.0452,-47.5838,rafard
+3542206,Rancharia,-22.2828,-50.9283,rancharia
+3542305,Redenção da Serra,-23.2537,-45.5261,redencao da serra
+3542404,Regente Feijó,-22.2525,-51.2941,regente feijo
+3542503,Reginópolis,-21.8832,-49.1805,reginopolis
+3542602,Registro,-24.504,-47.8208,registro
+3542701,Restinga,-20.6482,-47.5059,restinga
+3542800,Ribeira,-24.6073,-49.0366,ribeira
+3542909,Ribeirão Bonito,-22.0601,-48.1853,ribeirao bonito
+3543006,Ribeirão Branco,-24.2562,-48.7781,ribeirao branco
+3543105,Ribeirão Corrente,-20.4489,-47.5733,ribeirao corrente
+3543204,Ribeirão do Sul,-22.7517,-49.9227,ribeirao do sul
+3543238,Ribeirão dos Índios,-21.7843,-51.5833,ribeirao dos indios
+3543253,Ribeirão Grande,-24.1886,-48.3588,ribeirao grande
+3543303,Ribeirão Pires,-23.7011,-46.4028,ribeirao pires
+3543402,Ribeirão Preto,-21.2108,-47.8213,ribeirao preto
+3543501,Riversul,-23.8469,-49.4478,riversul
+3543600,Rifaina,-20.0608,-47.4409,rifaina
+3543709,Rincão,-21.5939,-48.032,rincao
+3543808,Rinópolis,-21.6812,-50.7174,rinopolis
+3543907,Rio Claro,-22.3739,-47.5799,rio claro
+3544004,Rio das Pedras,-22.8503,-47.5984,rio das pedras
+3544103,Rio Grande da Serra,-23.7379,-46.3795,rio grande da serra
+3544202,Riolândia,-20.0235,-49.7092,riolandia
+3544251,Rosana,-22.4891,-52.8369,rosana
+3544301,Roseira,-22.933,-45.3025,roseira
+3544400,Rubiácea,-21.3609,-50.7858,rubiacea
+3544509,Rubinéia,-20.2497,-51.0183,rubineia
+3544608,Sabino,-21.4708,-49.5756,sabino
+3544707,Sagres,-21.8678,-50.9903,sagres
+3544806,Sales,-21.3472,-49.5027,sales
+3544905,Sales Oliveira,-20.8315,-47.8546,sales oliveira
+3545001,Salesópolis,-23.5802,-45.8426,salesopolis
+3545100,Salmourão,-21.588,-50.8763,salmourao
+3545159,Saltinho,-22.8712,-47.7318,saltinho
+3545209,Salto,-23.1805,-47.3026,salto
+3545308,Salto de Pirapora,-23.6528,-47.5806,salto de pirapora
+3545407,Salto Grande,-22.8709,-49.9608,salto grande
+3545506,Sandovalina,-22.4779,-51.8421,sandovalina
+3545605,Santa Adélia,-21.3178,-48.819,santa adelia
+3545704,Santa Albertina,-20.0142,-50.7277,santa albertina
+3545803,Santa Bárbara d'Oeste,-22.8006,-47.4281,santa barbara d'oeste
+3546009,Santa Branca,-23.4264,-45.8633,santa branca
+3546108,Santa Clara d'Oeste,-20.0669,-50.9084,santa clara d'oeste
+3546207,Santa Cruz da Conceição,-22.1213,-47.4856,santa cruz da conceicao
+3546256,Santa Cruz da Esperança,-21.2748,-47.4396,santa cruz da esperanca
+3546306,Santa Cruz das Palmeiras,-21.8555,-47.2501,santa cruz das palmeiras
+3546405,Santa Cruz do Rio Pardo,-22.8093,-49.569,santa cruz do rio pardo
+3546504,Santa Ernestina,-21.4525,-48.3668,santa ernestina
+3546603,Santa Fé do Sul,-20.2419,-50.9502,santa fe do sul
+3546702,Santa Gertrudes,-22.4751,-47.5213,santa gertrudes
+3546801,Santa Isabel,-23.2889,-46.2424,santa isabel
+3546900,Santa Lúcia,-21.6708,-48.0574,santa lucia
+3547007,Santa Maria da Serra,-22.5646,-48.1543,santa maria da serra
+3547106,Santa Mercedes,-21.3168,-51.7371,santa mercedes
+3547205,Santana da Ponte Pensa,-20.2607,-50.7971,santana da ponte pensa
+3547304,Santana de Parnaíba,-23.4494,-46.9168,santana de parnaiba
+3547403,Santa Rita d'Oeste,-20.0972,-50.8127,santa rita d'oeste
+3547502,Santa Rita do Passa Quatro,-21.6825,-47.5079,santa rita do passa quatro
+3547601,Santa Rosa de Viterbo,-21.5038,-47.3662,santa rosa de viterbo
+3547650,Santa Salete,-20.2587,-50.7201,santa salete
+3547700,Santo Anastácio,-22.0377,-51.7225,santo anastacio
+3547809,Santo André,-23.728,-46.4416,santo andre
+3547908,Santo Antônio da Alegria,-21.0923,-47.1958,santo antonio da alegria
+3548005,Santo Antônio de Posse,-22.6033,-46.9499,santo antonio de posse
+3548054,Santo Antônio do Aracanguá,-20.873,-50.5543,santo antonio do aracangua
+3548104,Santo Antônio do Jardim,-22.1303,-46.6835,santo antonio do jardim
+3548203,Santo Antônio do Pinhal,-22.8318,-45.6981,santo antonio do pinhal
+3548302,Santo Expedito,-21.8249,-51.3702,santo expedito
+3548401,Santópolis do Aguapeí,-21.6602,-50.518,santopolis do aguapei
+3548500,Santos,-23.8689,-46.2916,santos
+3548609,São Bento do Sapucaí,-22.6814,-45.6868,sao bento do sapucai
+3548708,São Bernardo do Campo,-23.813,-46.5508,sao bernardo do campo
+3548807,São Caetano do Sul,-23.6261,-46.5661,sao caetano do sul
+3548906,São Carlos,-21.9189,-47.8672,sao carlos
+3549003,São Francisco,-20.3658,-50.6759,sao francisco
+3549102,São João da Boa Vista,-21.978,-46.8022,sao joao da boa vista
+3549201,São João das Duas Pontes,-20.4084,-50.3835,sao joao das duas pontes
+3549250,São João de Iracema,-20.5208,-50.3563,sao joao de iracema
+3549300,São João do Pau d'Alho,-21.2234,-51.673,sao joao do pau d'alho
+3549409,São Joaquim da Barra,-20.5505,-47.9385,sao joaquim da barra
+3549508,São José da Bela Vista,-20.5875,-47.6272,sao jose da bela vista
+3549607,São José do Barreiro,-22.7489,-44.5873,sao jose do barreiro
+3549706,São José do Rio Pardo,-21.6037,-46.8795,sao jose do rio pardo
+3549805,São José do Rio Preto,-20.7972,-49.3581,sao jose do rio preto
+3549904,São José dos Campos,-23.0906,-45.9285,sao jose dos campos
+3549953,São Lourenço da Serra,-23.8524,-46.9364,sao lourenco da serra
+3550001,São Luiz do Paraitinga,-23.2401,-45.2538,sao luiz do paraitinga
+3550100,São Manuel,-22.6823,-48.5404,sao manuel
+3550209,São Miguel Arcanjo,-23.9139,-47.9933,sao miguel arcanjo
+3550308,São Paulo,-23.6501,-46.6481,sao paulo
+3550407,São Pedro,-22.5584,-47.9244,sao pedro
+3550506,São Pedro do Turvo,-22.6789,-49.7723,sao pedro do turvo
+3550605,São Roque,-23.549,-47.1096,sao roque
+3550704,São Sebastião,-23.7522,-45.6056,sao sebastiao
+3550803,São Sebastião da Grama,-21.7541,-46.753,sao sebastiao da grama
+3550902,São Simão,-21.4615,-47.5683,sao simao
+3551009,São Vicente,-23.9592,-46.4882,sao vicente
+3551108,Sarapuí,-23.6643,-47.7858,sarapui
+3551207,Sarutaiá,-23.2575,-49.4817,sarutaia
+3551306,Sebastianópolis do Sul,-20.6292,-49.9159,sebastianopolis do sul
+3551405,Serra Azul,-21.3161,-47.5497,serra azul
+3551504,Serrana,-21.2169,-47.6123,serrana
+3551603,Serra Negra,-22.5891,-46.6873,serra negra
+3551702,Sertãozinho,-21.1229,-48.0089,sertaozinho
+3551801,Sete Barras,-24.2739,-47.9341,sete barras
+3551900,Severínia,-20.7931,-48.7938,severinia
+3552007,Silveiras,-22.7347,-44.8409,silveiras
+3552106,Socorro,-22.6112,-46.5244,socorro
+3552205,Sorocaba,-23.4646,-47.4468,sorocaba
+3552304,Sud Mennucci,-20.6676,-50.9009,sud mennucci
+3552403,Sumaré,-22.8419,-47.263,sumare
+3552502,Suzano,-23.6084,-46.3104,suzano
+3552551,Suzanápolis,-20.4729,-51.0756,suzanapolis
+3552601,Tabapuã,-20.9319,-49.0289,tabapua
+3552700,Tabatinga,-21.7125,-48.6291,tabatinga
+3552809,Taboão da Serra,-23.6205,-46.7864,taboao da serra
+3552908,Taciba,-22.5049,-51.3423,taciba
+3553005,Taguaí,-23.4745,-49.3974,taguai
+3553104,Taiaçu,-21.1322,-48.5303,taiacu
+3553203,Taiúva,-21.1327,-48.4282,taiuva
+3553302,Tambaú,-21.6018,-47.239,tambau
+3553401,Tanabi,-20.5312,-49.6465,tanabi
+3553500,Tapiraí,-24.0087,-47.6194,tapirai
+3553609,Tapiratiba,-21.4508,-46.7419,tapiratiba
+3553658,Taquaral,-21.0693,-48.3994,taquaral
+3553708,Taquaritinga,-21.4256,-48.5379,taquaritinga
+3553807,Taquarituba,-23.5302,-49.2346,taquarituba
+3553856,Taquarivaí,-23.9433,-48.6879,taquarivai
+3553906,Tarabai,-22.358,-51.6258,tarabai
+3553955,Tarumã,-22.7635,-50.6014,taruma
+3554003,Tatuí,-23.3621,-47.8695,tatui
+3554102,Taubaté,-23.0871,-45.5024,taubate
+3554201,Tejupá,-23.3425,-49.3066,tejupa
+3554300,Teodoro Sampaio,-22.4166,-52.374,teodoro sampaio
+3554409,Terra Roxa,-20.7788,-48.3458,terra roxa
+3554508,Tietê,-23.0494,-47.7077,tiete
+3554607,Timburi,-23.1958,-49.6104,timburi
+3554656,Torre de Pedra,-23.2501,-48.2127,torre de pedra
+3554706,Torrinha,-22.4446,-48.1644,torrinha
+3554755,Trabiju,-22.0323,-48.3452,trabiju
+3554805,Tremembé,-22.9408,-45.6042,tremembe
+3554904,Três Fronteiras,-20.2737,-50.8696,tres fronteiras
+3554953,Tuiuti,-22.8303,-46.6876,tuiuti
+3555000,Tupã,-21.9473,-50.5346,tupa
+3555109,Tupi Paulista,-21.3904,-51.5872,tupi paulista
+3555208,Turiúba,-20.9405,-50.1113,turiuba
+3555307,Turmalina,-20.0835,-50.4568,turmalina
+3555356,Ubarana,-21.2198,-49.7482,ubarana
+3555406,Ubatuba,-23.3788,-45.0237,ubatuba
+3555505,Ubirajara,-22.5443,-49.6659,ubirajara
+3555604,Uchoa,-20.9369,-49.1577,uchoa
+3555703,União Paulista,-20.8905,-49.8873,uniao paulista
+3555802,Urânia,-20.2089,-50.6525,urania
+3555901,Uru,-21.766,-49.2963,uru
+3556008,Urupês,-21.2052,-49.2652,urupes
+3556107,Valentim Gentil,-20.4205,-50.1017,valentim gentil
+3556206,Valinhos,-22.9751,-46.9813,valinhos
+3556305,Valparaíso,-21.2031,-50.9239,valparaiso
+3556354,Vargem,-22.8902,-46.4145,vargem
+3556404,Vargem Grande do Sul,-21.8607,-46.899,vargem grande do sul
+3556453,Vargem Grande Paulista,-23.6209,-47.0147,vargem grande paulista
+3556503,Várzea Paulista,-23.2193,-46.8249,varzea paulista
+3556602,Vera Cruz,-22.2341,-49.8262,vera cruz
+3556701,Vinhedo,-23.0465,-46.9792,vinhedo
+3556800,Viradouro,-20.8844,-48.3099,viradouro
+3556909,Vista Alegre do Alto,-21.1767,-48.6494,vista alegre do alto
+3556958,Vitória Brasil,-20.1984,-50.4855,vitoria brasil
+3557006,Votorantim,-23.5799,-47.4065,votorantim
+3557105,Votuporanga,-20.4578,-49.9891,votuporanga
+3557154,Zacarias,-21.1255,-50.0494,zacarias
+3557204,Chavantes,-23.0463,-49.7265,chavantes
+3557303,Estiva Gerbi,-22.2361,-46.9431,estiva gerbi

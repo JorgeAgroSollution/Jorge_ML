@@ -202,5 +202,6 @@ async def coletar_diario(lat_c: float, lon_c: float, ano_ini: int, ano_fim: int)
         agregacao="diario", parameters=PARAMETROS_NASA,
     )
     df = pd.DataFrame(df)
+    C.DIR_CACHE.mkdir(parents=True, exist_ok=True)
     df.to_parquet(cache, index=False)
     return df
