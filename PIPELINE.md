@@ -169,6 +169,37 @@ Para cada cultura, ela:
 4. renomeia `quantidade_produzida` para `producao`;
 5. renomeia `rendimento_medio` para `rendimento`.
 
+#### Unidades no CSV exportado
+
+O `agrobr` 2.x valida e acrescenta as unidades da PAM. O pipeline mantém os
+valores originais da fonte e, ao gravar `dataset_completo.csv` e os arquivos
+por cultura, torna a unidade parte do nome da coluna:
+
+| Coluna exportada | Unidade/origem |
+|---|---|
+| `rendimento_kg_ha` | rendimento médio da PAM, kg/ha |
+| `producao_t` | quantidade produzida da PAM, toneladas |
+| `area_colhida_ha`, `area_plantada_ha` | hectares |
+| `valor_producao_mil_reais` | mil reais |
+| `*_prec_mm`, `*_defic_mm`, `safra_prec_mm`, `safra_defic_mm`, `cad_mm` | mm |
+| `*_tmax_c`, `*_tmin_c` | °C |
+| `*_rad_mj_m2_dia` | MJ/m²/dia (média da janela) |
+| `*_dias_calor_d`, `*_dias_geada_d`, `*_seca_max_d` | dias |
+| `*_gd_graus_dia` | graus-dia |
+| `*_estresse_fracao`, `*_umsolo_fracao` | fração 0–1 |
+| `altitude_m`, `solo_dist_km`, `prof_max_cm` | m, km e cm |
+| `argila_g_kg`, `silte_g_kg`, `carbono_organico_g_kg` | g/kg |
+| `ctc_cmolc_dm3`, `aluminio_cmolc_dm3` | cmolc/dm³ |
+| `saturacao_bases_pct` | % |
+| `fosforo_mg_dm3` | mg/dm³ |
+
+As colunas `*_fonte` registram a unidade textual informada pelo `agrobr`.
+Para laranja até 2000, a PAM usa frutos/ha e mil frutos; esses anos são
+descartados pela quebra de série documentada em `config.py`. A coluna
+`agua_dispo` não recebe uma unidade inventada: ela é preservada apenas quando
+vier no perfil de solo, pois o contrato da fonte não foi usado no cálculo da
+CAD deste pipeline.
+
 Uso:
 
 ```bash
@@ -337,6 +368,10 @@ São coletados:
 - vento;
 - pressão;
 - umidade do solo na zona radicular.
+
+No retorno diário do `agrobr`, as unidades são: `temp_*` em °C,
+`precip_mm` em mm/dia, `umidade_rel` em %, `radiacao_mj` em MJ/m²/dia,
+`vento_ms` em m/s, `ps_kpa` em kPa e `umidade_solo_raiz` como fração 0–1.
 
 O período começa em 1999, um ano antes da PAM, porque algumas culturas
 possuem janelas fenológicas iniciadas no ano anterior à colheita.

@@ -26,6 +26,7 @@ from sklearn.model_selection import GroupKFold
 
 import alvo
 import config as C
+import unidades
 
 warnings.filterwarnings("ignore")
 
@@ -208,7 +209,7 @@ def main():
     ap.add_argument("--saida", default=str(C.DIR_RESULTADOS))
     a = ap.parse_args()
 
-    df = pd.read_csv(a.dados)
+    df = unidades.para_modelagem(pd.read_csv(a.dados))
     if a.legado or "y_log" not in df.columns:
         if a.sem_limpeza:
             df = df.assign(
@@ -245,7 +246,7 @@ def main():
     pd.DataFrame(imps).to_csv(f"{a.saida}/importancia_permutacao.csv")
     pd.set_option("display.width", 250)
     print(res.round(3).to_string(index=False))
-    print("\nTop-5 features (importância por permutação, ΔMAE log) por cultura:")
+    print("\nTop-5 features (importancia por permutacao, delta MAE log) por cultura:")
     for c, s in imps.items():
         print(f"  {c}: " + ", ".join(f"{k}({v:.3f})" for k, v in s.head(5).items()))
 

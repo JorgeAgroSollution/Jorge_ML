@@ -27,11 +27,13 @@ import clima
 import config as C
 import referencia
 import solo
+import unidades
 
 
 def carregar_pam(caminho) -> pd.DataFrame:
     df = pd.read_csv(caminho)
     df = df.drop(columns=["fonte"], errors="ignore")
+    df = unidades.normalizar_pam(df)
     obrig = {
         "localidade",
         "ano",
@@ -63,7 +65,7 @@ async def coletar_pam() -> pd.DataFrame:
         df["produto"] = cultura
         quadros.append(df)
     pam = pd.concat(quadros, ignore_index=True)
-    return pam
+    return unidades.normalizar_pam(pam)
 
 
 def ligar_codigo_ibge(pam: pd.DataFrame, ref: pd.DataFrame) -> pd.DataFrame:
@@ -177,6 +179,7 @@ async def main(args):
     )
     df = adicionar_lag(df)
     assert not df.duplicated(["cod_ibge", "produto", "ano"]).any()
+    df = unidades.para_exportacao(df)
     df.to_csv(C.DIR_PROC / "dataset_completo.csv", index=False)
     for cultura, g in df.groupby("produto"):
         g.to_csv(C.DIR_PROC / f"dataset_{cultura}.csv", index=False)

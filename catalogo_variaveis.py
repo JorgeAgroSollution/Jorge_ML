@@ -36,11 +36,15 @@ LOCALIZACAO = [
 ]
 
 PAM = [
-    "rendimento",
-    "producao",
-    "area_colhida",
-    "area_plantada",
-    "rendimento_calc",
+    "rendimento_kg_ha",
+    "producao_t",
+    "area_colhida_ha",
+    "area_plantada_ha",
+    "rendimento_calc_kg_ha",
+    "valor_producao_mil_reais",
+    "unidade_producao_fonte",
+    "unidade_rendimento_fonte",
+    "unidade_valor_producao_fonte",
     "razao_colhida_plantada",
     "perda_flag",
     "rend_repetido",
@@ -51,13 +55,13 @@ PAM = [
 
 SOLO = [
     "ph_h2o",
-    "carbono_organico",
-    "ctc",
-    "saturacao_bases",
-    "aluminio",
-    "fosforo",
-    "argila",
-    "silte",
+    "carbono_organico_g_kg",
+    "ctc_cmolc_dm3",
+    "saturacao_bases_pct",
+    "aluminio_cmolc_dm3",
+    "fosforo_mg_dm3",
+    "argila_g_kg",
+    "silte_g_kg",
     "agua_dispo",
     "prof_max_cm",
     "cad_mm",
@@ -67,24 +71,24 @@ SOLO = [
 ]
 
 # Os indicadores com prefixo de janela aparecem, por exemplo, como
-# ``floracao_prec`` e ``enchimento_defic``.
+# ``floracao_prec_mm`` e ``enchimento_defic_mm``.
 CLIMA_INDICADORES = [
-    "prec",
-    "tmax",
-    "tmin",
-    "rad",
-    "defic",
-    "estresse",
-    "dias_calor",
-    "dias_geada",
-    "seca_max",
-    "gd",
-    "umsolo",
+    "prec_mm",
+    "tmax_c",
+    "tmin_c",
+    "rad_mj_m2_dia",
+    "defic_mm",
+    "estresse_fracao",
+    "dias_calor_d",
+    "dias_geada_d",
+    "seca_max_d",
+    "gd_graus_dia",
+    "umsolo_fracao",
 ]
 
 CLIMA_GLOBAIS = [
-    "safra_prec",
-    "safra_defic",
+    "safra_prec_mm",
+    "safra_defic_mm",
     "altitude_m",
 ]
 
@@ -122,11 +126,23 @@ def selecionar_grupos(colunas: Iterable[str]) -> dict[str, list[str]]:
 
 
 DESCRICOES = {
-    "cad_mm": "Capacidade de água disponível estimada no solo, em mm.",
+    "rendimento_kg_ha": "Rendimento médio da PAM, em kg/ha.",
+    "producao_t": "Quantidade produzida da PAM, em toneladas.",
+    "area_colhida_ha": "Área colhida da PAM, em hectares.",
+    "area_plantada_ha": "Área plantada da PAM, em hectares.",
+    "carbono_organico_g_kg": "Carbono orgânico do solo, em g/kg.",
+    "ctc_cmolc_dm3": "Capacidade de troca catiônica, em cmolc/dm3.",
+    "saturacao_bases_pct": "Saturação por bases, em %.",
+    "aluminio_cmolc_dm3": "Alumínio trocável, em cmolc/dm3.",
+    "fosforo_mg_dm3": "Fósforo disponível, em mg/dm3.",
+    "argila_g_kg": "Argila, em g/kg.",
+    "silte_g_kg": "Silte, em g/kg.",
+    "cad_mm": "Capacidade de água disponível estimada, em mm.",
     "solo_imputado": "Indica se os valores de solo foram imputados por vizinhos.",
     "solo_dist_km": "Distância média aos perfis usados na imputação do solo, em km.",
     "n_perfis": "Quantidade de perfis de solo disponíveis no município.",
     "altitude_m": "Altitude aproximada da célula climática, em metros.",
-    "safra_prec": "Precipitação acumulada durante todas as janelas da safra, em mm.",
-    "safra_defic": "Déficit hídrico acumulado durante todas as janelas, em mm.",
+    "safra_prec_mm": "Precipitação acumulada durante todas as janelas da safra, em mm.",
+    "safra_defic_mm": "Déficit hídrico acumulado durante todas as janelas, em mm.",
+    "valor_producao_mil_reais": "Valor da produção da PAM, em mil reais.",
 }
