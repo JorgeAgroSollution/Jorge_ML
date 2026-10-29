@@ -67,6 +67,21 @@ def _renomear_sem_colisao(df: pd.DataFrame, mapa: dict[str, str]) -> pd.DataFram
     return df.rename(columns=mapa)
 
 
+# def _novas_colunas_sem_colisao(
+#     df: pd.DataFrame, mapa: dict[str, str]
+# ) -> list[str]:
+#     """Retorna os novos nomes das colunas presentes e falha em ambiguidades."""
+#     novas = []
+#     for coluna in df.columns:
+#         if coluna not in mapa:
+#             continue
+#         destino = mapa[coluna]
+#         if destino in df.columns and destino != coluna:
+#             raise ValueError(f"colunas ambíguas: {coluna!r} e {destino!r}")
+#         novas.append(destino)
+#     return novas
+
+
 def normalizar_pam(df: pd.DataFrame) -> pd.DataFrame:
     """Converte nomes sem unidade da PAM/agrobr para o esquema interno."""
     return _renomear_sem_colisao(df, _API_PAM_PARA_INTERNO)

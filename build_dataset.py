@@ -15,6 +15,7 @@ Diferenças em relação ao eda.py original:
   * não usa produção/área como feature; inclui rendimento defasado RELATIVO (lag1_rel).
 """
 
+# %%
 from __future__ import annotations
 
 import argparse
@@ -155,7 +156,7 @@ def adicionar_lag(df: pd.DataFrame) -> pd.DataFrame:
 
 
 async def main(args):
-    
+
     C.DIR_PROC.mkdir(parents=True, exist_ok=True)
     ref = await referencia.construir_referencia()
     pam = carregar_pam(args.pam_csv) if args.pam_csv else await coletar_pam()
