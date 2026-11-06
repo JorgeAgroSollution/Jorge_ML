@@ -889,3 +889,15 @@ O pipeline:
 13. avalia regiões novas e anos futuros;
 14. calcula intervalos P10/P90;
 15. gera métricas e importância das features.
+
+## 19. Artefatos fixos e previsão com o mínimo de dados
+
+`modelar_culturas.py` treina o alvo `anomalia = y_log - tendência(ano)` (a tendência é ajustada só no treino de
+cada fold na validação e com todos os dados no modelo final). A previsão final é `exp(tendência(ano) + modelo)`.
+Cada fold também mede `MAE_tendencia`, `MAE_mun+tend`, `skill_vs_tendencia` e `skill_vs_mun+tend` em
+`resultados/metricas_modelos.csv`.
+
+O artefato `modelo_<cultura>.joblib` passa a guardar `tendencia_coef`, `ano_ultimo`, `intervalo_log`, `validacao`
+e `perfil_local` (ver README). `predicao.py` usa esses valores para montar as features a partir de
+latitude e longitude: município mais próximo (haversine) no `perfil_local`, solo informado > solo do município,
+`lag1_rel` observado (se o ano anterior é o último dado do município) ou média histórica.

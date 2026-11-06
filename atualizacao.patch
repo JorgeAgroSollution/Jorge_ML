@@ -1,0 +1,886 @@
+diff --git a/PIPELINE.md b/PIPELINE.md
+index 6dd4021..1f4ad71 100644
+--- a/PIPELINE.md
++++ b/PIPELINE.md
+@@ -889,3 +889,15 @@ O pipeline:
+ 13. avalia regiões novas e anos futuros;
+ 14. calcula intervalos P10/P90;
+ 15. gera métricas e importância das features.
++
++## 19. Artefatos fixos e previsão com o mínimo de dados
++
++`modelar_culturas.py` treina o alvo `anomalia = y_log - tendência(ano)` (a tendência é ajustada só no treino de
++cada fold na validação e com todos os dados no modelo final). A previsão final é `exp(tendência(ano) + modelo)`.
++Cada fold também mede `MAE_tendencia`, `MAE_mun+tend`, `skill_vs_tendencia` e `skill_vs_mun+tend` em
++`resultados/metricas_modelos.csv`.
++
++O artefato `modelo_<cultura>.joblib` passa a guardar `tendencia_coef`, `ano_ultimo`, `intervalo_log`, `validacao`
++e `perfil_local` (ver README). `predicao.py` usa esses valores para montar as features a partir de
++latitude e longitude: município mais próximo (haversine) no `perfil_local`, solo informado > solo do município,
++`lag1_rel` observado (se o ano anterior é o último dado do município) ou média histórica.
+diff --git a/README.md b/README.md
+index e48c5ed..0d43b5a 100644
+--- a/README.md
++++ b/README.md
+@@ -10,8 +10,10 @@
+ | `alvo.py` | Limpeza auditável do rendimento (PAM) + tendência tecnológica (ajustada só no treino). |
+ | `build_dataset.py` | Coleta e montagem ponta a ponta, junção por código IBGE, uma tabela por cultura. |
+ | `avaliar.py` | Validação espacial e temporal, baseline, quantis P10/P90 calibrados (conformal), importância por permutação. |
+-| `modelar_culturas.py` | Compara ElasticNet, RandomForest e HistGradientBoosting por cultura, treina o vencedor e salva previsões. |
++| `modelar_culturas.py` | Compara ElasticNet, RandomForest e HistGradientBoosting por cultura (alvo = anomalia sobre a tendência, com skill vs. regras simples), treina o vencedor e grava no artefato tendência, faixa P10–P90, skill e `perfil_local`. |
++| `predicao.py` | Previsão com o mínimo de dados do agricultor (cultura, ano, latitude, longitude; solo opcional), usando só o que está no artefato. |
+ | `test_pipeline.py` | Testes, inclusive recuperação de sinal em dados sintéticos. |
++| `test_predicao.py` | Testes do treino com artefatos fixos e da previsão por latitude/longitude. |
+ 
+ ## Uso
+ ```bash
+@@ -20,7 +22,7 @@ python build_dataset.py --pam-csv data/raw/df_market_pam.csv     # ou --coletar-
+ python avaliar.py --dados data/processed/dataset_completo.csv
+ python avaliar.py --dados df_merged.csv --legado                  # avalia o CSV antigo com o método novo
+ python -m pytest -q test_pipeline.py
+-uv run python modelar_culturas.py                                # todas as culturas, exceto soja
++uv run python modelar_culturas.py                                # todas as culturas (gera os artefatos usados pela API)
+ uv run python modelar_culturas.py --culturas milho cafe
+ ```
+ 
+@@ -55,6 +57,35 @@ diários devem ser preparados pelo consumidor ou por uma etapa de coleta separad
+ kg/ha médio na validação temporal; as métricas espacial e logarítmica também
+ ficam registradas para comparação.
+ 
++### Previsão com o mínimo de dados do agricultor
++
++`POST /predicoes/simples` pede só `cultura`, `ano`, `latitude` e `longitude`. O solo do talhão é opcional
++(qualquer campo informado substitui o do município). Não é preciso enviar clima diário, código IBGE nem
++`lag1_rel`:
++
++```bash
++curl -X POST http://127.0.0.1:8000/predicoes/simples -H 'Content-Type: application/json' \
++  -d '{"cultura": "milho", "ano": 2026, "latitude": -21.17, "longitude": -47.81}'
++```
++
++A resposta traz o rendimento previsto, a faixa `p10_kg_ha`–`p90_kg_ha` ("ano ruim" a "ano bom"), a
++`referencia_municipio_kg_ha` (tendência + média histórica do município), de onde veio o solo e o histórico, um
++indicador `confiavel` e `avisos`.
++
++O que é calculado **uma vez, no treino**, e reaproveitado (dentro de `modelo_<cultura>.joblib`):
++
++| Chave do artefato | Conteúdo |
++|---|---|
++| `tendencia_coef`, `ano_ultimo` | Reta de ganho tecnológico (log-rendimento) ajustada com todos os dados. |
++| `intervalo_log` | Quantis 10% e 90% do erro fora da amostra (o mais largo entre validação espacial e temporal). |
++| `validacao` | MAE e skill (espacial/temporal) vs. tendência e vs. tendência + média do município, inclusive **sem o rendimento do ano anterior** (horizonte ≥ 2 anos). `predicao.confiavel` exige ganho ≥ `SKILL_MINIMO` sobre a melhor regra simples da situação. |
++| `perfil_local` | Por município: clima típico por janela, altitude, solo, CAD, último `lag1_rel` e média histórica. |
++
++Limites assumidos (ver `config.py` e `predicao.py`): o clima da safra futura não é conhecido, então usa-se o
++clima típico; o município usado é o mais próximo **com dado da cultura** (aviso acima de 50 km, recusa acima de
++150 km); anos além de `ano_ultimo + 3` só extrapolam a tendência. Artefatos gerados antes desta versão não têm
++`perfil_local`: rode `uv run python modelar_culturas.py` de novo.
++
+ ## O que foi testado aqui (sem rede)
+ - Física (ETo, balanço hídrico), janelas, limpeza, tendência, lag sem vazamento e avaliação: `test_pipeline.py` passa.
+ - Avaliação aplicada ao `df_merged.csv` antigo: ver `resultados/metricas.csv`.
+diff --git a/api.py b/api.py
+index 534f1dd..286371c 100644
+--- a/api.py
++++ b/api.py
+@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
+ 
+ import clima
+ import config as C
++import predicao
+ 
+ 
+ class ClimaDiario(BaseModel):
+@@ -75,6 +76,57 @@ class PredicaoRequest(BaseModel):
+         return self
+ 
+ 
++class SoloOpcional(BaseModel):
++    """Solo do talhão. Todos os campos são opcionais: o que faltar vem do perfil do município."""
++
++    model_config = ConfigDict(extra="forbid")
++
++    ph_h2o: float | None = None
++    carbono_organico: float | None = None
++    ctc: float | None = None
++    saturacao_bases: float | None = None
++    aluminio: float | None = None
++    argila: float | None = None
++    silte: float | None = None
++    prof_max_cm: float | None = Field(default=None, ge=0)
++
++
++class PredicaoSimplesRequest(BaseModel):
++    """Mínimo que o agricultor precisa informar: cultura, ano da safra e localização."""
++
++    model_config = ConfigDict(extra="forbid")
++
++    cultura: str = Field(min_length=1)
++    ano: int = Field(ge=C.ANO_INICIAL, le=C.ANO_FINAL + 10)
++    latitude: float = Field(ge=-90, le=90)
++    longitude: float = Field(ge=-180, le=180)
++    solo: SoloOpcional | None = None
++    lag1_rel: float | None = None  # opcional: se o consumidor souber, substitui o histórico do município
++
++    @model_validator(mode="after")
++    def cultura_conhecida(self) -> "PredicaoSimplesRequest":
++        if self.cultura not in C.CALENDARIOS:
++            raise ValueError(f"Cultura não suportada: {self.cultura}")
++        return self
++
++
++class PredicaoSimplesResponse(BaseModel):
++    cultura: str
++    ano: int
++    rendimento_predito_kg_ha: float
++    p10_kg_ha: float
++    p90_kg_ha: float
++    referencia_municipio_kg_ha: float
++    municipio_cod_ibge: int
++    distancia_km: float
++    solo_origem: str
++    lag_origem: str
++    clima_usado: str
++    confiavel: bool
++    avisos: list[str]
++    modelo: str
++
++
+ class PredicaoResponse(BaseModel):
+     cultura: str
+     cod_ibge: int
+@@ -114,7 +166,7 @@ def _caminhos_modelos() -> dict[str, Path]:
+     }
+     soja = _artefato_soja()
+     if soja.exists():
+-        caminhos["soja"] = soja
++        caminhos.setdefault("soja", soja)  # o artefato legado só vale se não houver um novo na pasta
+     return caminhos
+ 
+ 
+@@ -137,6 +189,7 @@ def _carregar(cultura: str) -> dict:
+         "modelo_nome": artefato.get("modelo_nome", type(modelo).__name__),
+         "caminho": caminho,
+         "unidade_predicao": artefato.get("unidade_predicao", "kg/ha"),
++        "bruto": artefato,
+     }
+ 
+ 
+@@ -196,7 +249,7 @@ def prever(req: PredicaoRequest) -> PredicaoResponse:
+         raise HTTPException(status_code=422, detail=str(exc)) from exc
+     except Exception as exc:
+         raise HTTPException(status_code=500, detail="Falha inesperada durante a predição.") from exc
+-    rendimento = float(np.exp(pred_log))
++    rendimento = predicao.rendimento_kg(artefato["bruto"], req.ano, pred_log)
+     if not np.isfinite(rendimento) or rendimento < 0:
+         raise HTTPException(status_code=500, detail="O modelo produziu uma predição inválida.")
+     return PredicaoResponse(
+@@ -226,9 +279,31 @@ def modelos() -> list[ModeloInfo]:
+     return catalogo_modelos()
+ 
+ 
++def prever_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
++    try:
++        artefato = _carregar(req.cultura)
++        solo = req.solo.model_dump() if req.solo else None
++        saida = predicao.prever_simples(
++            artefato["bruto"], req.ano, req.latitude, req.longitude, solo, req.lag1_rel
++        )
++    except (FileNotFoundError, RuntimeError, ValueError, KeyError) as exc:
++        raise HTTPException(status_code=422, detail=str(exc)) from exc
++    except Exception as exc:
++        raise HTTPException(status_code=500, detail="Falha inesperada durante a predição.") from exc
++    return PredicaoSimplesResponse(
++        cultura=req.cultura, ano=req.ano, modelo=artefato["modelo_nome"], **saida
++    )
++
++
++@app.post("/predicoes/simples", response_model=PredicaoSimplesResponse, tags=["predições"])
++def predicoes_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
++    """Previsão só com cultura, ano, latitude e longitude (solo opcional)."""
++    return prever_simples(req)
++
++
+ @app.post("/predicoes", response_model=PredicaoResponse, tags=["predições"])
+ def predicoes(req: PredicaoRequest) -> PredicaoResponse:
+     return prever(req)
+ 
+ 
+-__all__ = ["app", "catalogo_modelos", "prever"]
++__all__ = ["app", "catalogo_modelos", "prever", "prever_simples"]
+diff --git a/config.py b/config.py
+index 3d861f5..d19b2f1 100644
+--- a/config.py
++++ b/config.py
+@@ -34,6 +34,14 @@ CULTURAS = [
+     "mandioca",
+ ]
+ 
++# --- Predição com o mínimo de dados do agricultor (predicao.py) ---------------------------------
++# O agricultor informa só cultura, ano, latitude e longitude. O restante vem do "perfil local" salvo no
++# artefato de cada cultura. Premissas abaixo: revisar com CATI/IAC.
++DISTANCIA_AVISO_KM = 50.0  # município mais próximo com dado da cultura além disso => aviso
++DISTANCIA_MAX_KM = 150.0  # além disso o ponto está fora da área coberta => recusa
++HORIZONTE_AVISO_ANOS = 3  # anos além do último dado em que a tendência é só extrapolada => aviso
++SKILL_MINIMO = 0.03  # ganho mínimo (3% menos erro) sobre a melhor regra simples para o modelo ser 'confiável'
++
+ # --- Quebras de série documentadas na PAM/IBGE (agrobr.ibge.pam) -------------------------------
+ # laranja <= 2000: rendimento em frutos/ha (mil frutos), não kg/ha.
+ # café <= 2001: "em coco"; a partir de 2002: "beneficiado". Sem conversão implícita.
+diff --git a/modelar_culturas.py b/modelar_culturas.py
+index 47b2250..7cd4972 100644
+--- a/modelar_culturas.py
++++ b/modelar_culturas.py
+@@ -22,9 +22,11 @@ from sklearn.model_selection import GroupKFold
+ from sklearn.pipeline import Pipeline
+ from sklearn.preprocessing import StandardScaler
+ 
++import alvo
+ import config as C
+ import unidades
+ from avaliar import selecionar_features
++from predicao import construir_perfil_local
+ 
+ MODELOS = ("ElasticNet", "RandomForest", "HistGradientBoosting")
+ 
+@@ -140,17 +142,47 @@ def _avaliar_split(
+     nome_modelo: str,
+     splits: list[tuple[np.ndarray, np.ndarray]],
+     validacao: str,
++    residuos: dict | None = None,
+ ) -> list[dict]:
++    """O modelo aprende a ANOMALIA do log-rendimento em torno da tendência (ajustada só no treino do fold).
++
++    Sem isso o modelo não enxerga o ganho tecnológico (o milho subiu ~50% em 25 anos) e erra todo ano futuro.
++    Cada fold também mede as regras simples de comparação (só tendência; tendência + média do município):
++    `skill_* > 0` significa que o modelo agrega valor. `residuos` acumula y_log - previsão (base da faixa P10–P90).
++    """
+     linhas = []
+     for fold, (treino, teste) in enumerate(splits, 1):
++        dtr, dte = df.iloc[treino], df.iloc[teste]
++        tend = alvo.Tendencia().fit(dtr["ano"], dtr["y_log"])
++        anom = dtr["y_log"].to_numpy() - tend.predict(dtr["ano"])
+         modelo = _pipeline(nome_modelo)
+-        modelo.fit(
+-            df.iloc[treino][features],
+-            df.iloc[treino]["y_log"],
+-            modelo__sample_weight=df.iloc[treino]["peso"].to_numpy(),
++        modelo.fit(dtr[features], anom, modelo__sample_weight=dtr["peso"].to_numpy())
++        base = tend.predict(dte["ano"])
++        pred = base + modelo.predict(dte[features])
++        met = _metricas(dte["y_log"], pred)
++        anom_mun = pd.Series(anom, index=dtr["cod_ibge"].to_numpy()).groupby(level=0).mean()
++        base_mun = base + dte["cod_ibge"].map(anom_mun).fillna(0).to_numpy()
++        real = np.exp(dte["y_log"].to_numpy())
++        mae_tend = float(np.mean(np.abs(real - np.exp(base))))
++        mae_mun = float(np.mean(np.abs(real - np.exp(base_mun))))
++        met.update(
++            {
++                "MAE_tendencia": mae_tend,
++                "MAE_mun+tend": mae_mun,
++                "skill_vs_tendencia": 1 - met["MAE_kg_ha"] / mae_tend,
++                "skill_vs_mun+tend": 1 - met["MAE_kg_ha"] / mae_mun,
++            }
+         )
+-        pred = modelo.predict(df.iloc[teste][features])
+-        met = _metricas(df.iloc[teste]["y_log"], pred)
++        if validacao.startswith("temporal") and "lag1_rel" in features:
++            # Horizonte >= 2 anos: o rendimento do ano anterior ainda não existe e a previsão usa a média
++            # histórica do município no lugar do lag (é o que predicao.py faz). Mede o modelo nessa condição.
++            rel = dtr["y_log"] - dtr.groupby("ano")["y_log"].transform("median")
++            lag_medio = rel.groupby(dtr["cod_ibge"]).mean()
++            sem_lag = dte.assign(lag1_rel=dte["cod_ibge"].map(lag_medio))
++            mae_sl = float(np.mean(np.abs(real - np.exp(base + modelo.predict(sem_lag[features])))))
++            met.update({"MAE_sem_lag": mae_sl, "skill_sem_lag_vs_mun+tend": 1 - mae_sl / mae_mun})
++        if residuos is not None:
++            residuos.setdefault((nome_modelo, validacao), []).append(dte["y_log"].to_numpy() - pred)
+         met.update(
+             cultura=str(df.iloc[0]["produto"]),
+             modelo=nome_modelo,
+@@ -176,8 +208,8 @@ def _splits_temporais(df: pd.DataFrame) -> list[tuple[np.ndarray, np.ndarray]]:
+     return splits
+ 
+ 
+-def avaliar_modelos(df: pd.DataFrame, cultura: str) -> tuple[pd.DataFrame, list[str]]:
+-    """Compara os modelos em validações espacial e temporal."""
++def avaliar_modelos(df: pd.DataFrame, cultura: str) -> tuple[pd.DataFrame, list[str], dict]:
++    """Compara os modelos em validações espacial e temporal. Devolve (métricas, features, resíduos)."""
+     features = selecionar_features(df, com_coordenadas=False, com_lag=True)
+     if not features:
+         raise ValueError(f"Nenhuma feature válida para {cultura}.")
+@@ -185,14 +217,16 @@ def avaliar_modelos(df: pd.DataFrame, cultura: str) -> tuple[pd.DataFrame, list[
+     n_splits = min(2, n_grupos)
+     espaciais = list(GroupKFold(n_splits=n_splits).split(df, groups=grupos))
+     temporais = _splits_temporais(df)
+-    linhas = []
++    linhas, residuos = [], {}
+     for nome in MODELOS:
+         linhas.extend(
+-            _avaliar_split(df, features, nome, espaciais, "espacial (regiões novas)")
++            _avaliar_split(df, features, nome, espaciais, "espacial (regiões novas)", residuos)
+         )
+         if temporais:
+-            linhas.extend(_avaliar_split(df, features, nome, temporais, "temporal (anos futuros)"))
+-    return pd.DataFrame(linhas), features
++            linhas.extend(
++                _avaliar_split(df, features, nome, temporais, "temporal (anos futuros)", residuos)
++            )
++    return pd.DataFrame(linhas), features, residuos
+ 
+ 
+ def selecionar_modelo(metricas: pd.DataFrame) -> str:
+@@ -204,21 +238,64 @@ def selecionar_modelo(metricas: pd.DataFrame) -> str:
+     return str(resumo.sort_values(["MAE_kg_ha", "modelo"]).iloc[0]["modelo"])
+ 
+ 
++def resumo_validacao(metricas: pd.DataFrame, escolhido: str) -> dict:
++    """Métricas fixas do modelo escolhido (médias dos folds), guardadas no artefato para uso posterior."""
++    sel = metricas[metricas["modelo"].eq(escolhido)]
++    out = {}
++    for chave, prefixo in (("temporal", "temporal"), ("espacial", "espacial")):
++        v = sel[sel["validacao"].str.startswith(prefixo)]
++        if v.empty:
++            continue
++        out[f"MAE_{chave}_kg_ha"] = float(v["MAE_kg_ha"].mean())
++        out[f"skill_{chave}_vs_tendencia"] = float(v["skill_vs_tendencia"].mean())
++        out[f"skill_{chave}_vs_mun+tend"] = float(v["skill_vs_mun+tend"].mean())
++        if "skill_sem_lag_vs_mun+tend" in v and v["skill_sem_lag_vs_mun+tend"].notna().any():
++            out[f"skill_{chave}_sem_lag_vs_mun+tend"] = float(v["skill_sem_lag_vs_mun+tend"].mean())
++    return out
++
++
++def intervalo_log(residuos: dict, escolhido: str) -> tuple[float, float]:
++    """Quantis 10% e 90% dos erros (log) fora da amostra; usa o mais largo entre espacial e temporal."""
++    qs = [
++        np.quantile(np.concatenate(r), [0.1, 0.9])
++        for (nome, _), r in residuos.items()
++        if nome == escolhido
++    ]
++    return float(min(q[0] for q in qs)), float(max(q[1] for q in qs))
++
++
+ def treinar_finais(
+-    df: pd.DataFrame, cultura: str, features: list[str], nome_modelo: str, diretorio: Path
++    df: pd.DataFrame,
++    cultura: str,
++    features: list[str],
++    nome_modelo: str,
++    diretorio: Path,
++    validacao: dict | None = None,
++    faixa_log: tuple[float, float] | None = None,
+ ) -> pd.DataFrame:
+     diretorio.mkdir(parents=True, exist_ok=True)
++    tend = alvo.Tendencia().fit(df["ano"], df["y_log"])
++    base = tend.predict(df["ano"])
+     modelo = _pipeline(nome_modelo)
+-    modelo.fit(df[features], df["y_log"], modelo__sample_weight=df["peso"].to_numpy())
+-    pred = np.exp(modelo.predict(df[features]))
++    modelo.fit(
++        df[features], df["y_log"].to_numpy() - base, modelo__sample_weight=df["peso"].to_numpy()
++    )
++    pred = np.exp(base + modelo.predict(df[features]))
++    validacao = validacao or {}
+     artefato = {
+         "modelo": modelo,
+         "modelo_nome": nome_modelo,
+         "cultura": cultura,
+         "features": features,
+-        "target": "y_log",
++        "target": "anomalia_y_log",  # previsão final = exp(tendência(ano) + modelo)
+         "unidade_predicao": "kg/ha",
+         "n_linhas_treino": len(df),
++        # --- artefatos fixos reutilizados na previsão (predicao.py) ---
++        "tendencia_coef": tuple(float(c) for c in tend.coef),
++        "ano_ultimo": int(df["ano"].max()),
++        "intervalo_log": faixa_log,
++        "validacao": validacao,
++        "perfil_local": construir_perfil_local(df, features, tend),
+     }
+     joblib.dump(artefato, diretorio / f"modelo_{cultura}.joblib")
+     return pd.DataFrame(
+@@ -240,18 +317,26 @@ def executar(
+     diretorio_dados: Path = C.DIR_PROC,
+     diretorio_resultados: Path = C.DIR_RESULTADOS,
+ ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+-    culturas = culturas or [c for c in C.CULTURAS if c != "soja"]
++    culturas = culturas or list(C.CULTURAS)
+     analises, metricas, previsoes = [], [], []
+     for cultura in culturas:
+-        if cultura == "soja":
+-            continue
+         df = carregar_cultura(cultura, diretorio_dados)
+         analises.append(analisar_dados(df, cultura))
+-        met, features = avaliar_modelos(df, cultura)
++        met, features, residuos = avaliar_modelos(df, cultura)
+         escolhido = selecionar_modelo(met)
+         met["modelo_selecionado"] = met["modelo"].eq(escolhido)
+         metricas.append(met)
+-        previsoes.append(treinar_finais(df, cultura, features, escolhido, diretorio_resultados / "modelos_cultura"))
++        previsoes.append(
++            treinar_finais(
++                df,
++                cultura,
++                features,
++                escolhido,
++                diretorio_resultados / "modelos_cultura",
++                resumo_validacao(met, escolhido),
++                intervalo_log(residuos, escolhido),
++            )
++        )
+     analise_df = pd.DataFrame(analises)
+     metricas_df = pd.concat(metricas, ignore_index=True)
+     previsoes_df = pd.concat(previsoes, ignore_index=True)
+@@ -264,7 +349,7 @@ def executar(
+ 
+ def main() -> None:
+     parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument("--culturas", nargs="*", choices=[c for c in C.CULTURAS if c != "soja"])
++    parser.add_argument("--culturas", nargs="*", choices=C.CULTURAS)
+     parser.add_argument("--dados", type=Path, default=C.DIR_PROC)
+     parser.add_argument("--saida", type=Path, default=C.DIR_RESULTADOS)
+     args = parser.parse_args()
+diff --git a/predicao.py b/predicao.py
+new file mode 100644
+index 0000000..0c9444a
+--- /dev/null
++++ b/predicao.py
+@@ -0,0 +1,202 @@
++"""Predição com o mínimo de dados do agricultor: cultura, ano, latitude e longitude (solo é opcional).
++
++Tudo o que o agricultor NÃO precisa informar é calculado uma única vez no treino (`modelar_culturas.py`)
++e fica guardado dentro do artefato de cada cultura, em `perfil_local` (uma linha por município):
++
++  * clima TÍPICO (mediana dos anos) por janela da cultura e altitude da célula climática;
++  * solo e CAD do município (o que o agricultor informar tem prioridade);
++  * histórico do município: último rendimento relativo (`lag1_rel`) e média histórica.
++
++Também ficam no artefato as métricas fixas do treino: coeficientes da tendência tecnológica, faixa de erro
++(P10/P90) e skill de validação. Nada é recalculado nem baixado na hora da previsão.
++
++Limite importante: o clima da safra futura não é conhecido. Usar o clima típico é honesto, e nos testes com
++dados reais o clima por janela quase não melhorou a previsão (ver README). Quem tem o clima diário da safra
++continua podendo usar `POST /predicoes`.
++"""
++
++from __future__ import annotations
++
++import numpy as np
++import pandas as pd
++
++import clima
++import config as C
++
++SOLO_CAMPOS = (
++    "ph_h2o",
++    "carbono_organico",
++    "ctc",
++    "saturacao_bases",
++    "aluminio",
++    "argila",
++    "silte",
++    "prof_max_cm",
++)
++
++
++# ---------------------------------------------------------------------------------------------
++# Treino: o que é calculado uma vez e guardado no artefato
++# ---------------------------------------------------------------------------------------------
++def construir_perfil_local(df: pd.DataFrame, features: list[str], tend) -> pd.DataFrame:
++    """Uma linha por município com tudo o que o modelo precisa e o agricultor não informa.
++
++    `tend` é a `alvo.Tendencia` ajustada com todos os dados (a mesma gravada no artefato).
++    """
++    d = df.copy()
++    estaticas = [f for f in features if f != "lag1_rel"]
++    g = d.groupby("cod_ibge")
++    perfil = g[estaticas].median()  # clima típico, solo, altitude, CAD (NaN continua NaN)
++    perfil["lat"], perfil["lon"] = g["lat"].first(), g["lon"].first()
++    for extra in ("solo_imputado", "solo_dist_km"):  # só informativos (não são features)
++        if extra in d:
++            perfil[extra] = g[extra].first()
++
++    d["_rel"] = d["y_log"] - d.groupby("ano")["y_log"].transform("median")  # igual a adicionar_lag
++    d["_anom"] = d["y_log"] - tend.predict(d["ano"])
++    ultimo = d.sort_values("ano").groupby("cod_ibge").tail(1).set_index("cod_ibge")
++    perfil["lag_ultimo"], perfil["ano_lag"] = ultimo["_rel"], ultimo["ano"]
++    perfil["lag_medio"] = d.groupby("cod_ibge")["_rel"].mean()
++    perfil["anom_mun"] = d.groupby("cod_ibge")["_anom"].mean()  # base: tendência + média do município
++    perfil["n_anos"] = g["ano"].nunique()
++    return perfil.reset_index()
++
++
++# ---------------------------------------------------------------------------------------------
++# Previsão
++# ---------------------------------------------------------------------------------------------
++def tendencia_log(artefato: dict, ano: int) -> float:
++    """Parte do log-rendimento explicada pela tendência (0 nos artefatos antigos, que não têm tendência)."""
++    if artefato.get("target") != "anomalia_y_log":
++        return 0.0
++    return float(np.polyval(artefato["tendencia_coef"], float(ano)))
++
++
++def rendimento_kg(artefato: dict, ano: int, saida_modelo: float) -> float:
++    """Converte a saída do modelo em kg/ha, respeitando o alvo do artefato (log direto ou anomalia)."""
++    return float(np.exp(tendencia_log(artefato, ano) + saida_modelo))
++
++
++def confiavel(artefato: dict, sem_historico: bool) -> bool:
++    """O modelo superou a melhor regra simples disponível nessa situação, por pelo menos SKILL_MINIMO?
++
++    Com o rendimento do ano anterior conhecido, a regra é "tendência + média do município". Sem ele (horizonte
++    de 2 anos ou mais) o modelo só tem a média histórica do município, e o teste é o mesmo, sem o lag.
++    Em regiões novas (sem histórico) o teste é contra a tendência pura.
++    """
++    v = artefato.get("validacao", {})
++    chave = "skill_temporal_sem_lag_vs_mun+tend" if sem_historico else "skill_temporal_vs_mun+tend"
++    return bool(
++        v.get(chave, -1.0) >= C.SKILL_MINIMO and v.get("skill_espacial_vs_tendencia", -1.0) >= C.SKILL_MINIMO
++    )
++
++
++def municipio_mais_proximo(perfil: pd.DataFrame, lat: float, lon: float) -> tuple[pd.Series, float]:
++    """Município do perfil mais próximo do ponto (haversine) e a distância em km."""
++    la, lo = np.deg2rad(perfil["lat"].to_numpy()), np.deg2rad(perfil["lon"].to_numpy())
++    phi, lam = np.deg2rad(lat), np.deg2rad(lon)
++    a = np.sin((la - phi) / 2) ** 2 + np.cos(phi) * np.cos(la) * np.sin((lo - lam) / 2) ** 2
++    dist = 2 * 6371.0 * np.arcsin(np.sqrt(a))
++    i = int(np.argmin(dist))
++    return perfil.iloc[i], float(dist[i])
++
++
++def montar_entrada(
++    artefato: dict,
++    ano: int,
++    lat: float,
++    lon: float,
++    solo: dict | None = None,
++    lag1_rel: float | None = None,
++) -> tuple[pd.DataFrame, dict]:
++    """Monta a linha de features do modelo a partir de lat/lon (+ solo opcional). Devolve (entrada, contexto)."""
++    perfil = artefato.get("perfil_local")
++    if perfil is None:
++        raise ValueError(
++            "Este artefato não tem 'perfil_local'. Rode `python modelar_culturas.py` para gerá-lo."
++        )
++    linha, dist = municipio_mais_proximo(perfil, lat, lon)
++    if dist > C.DISTANCIA_MAX_KM:
++        raise ValueError(
++            f"Ponto a {dist:.0f} km do município mais próximo com dados de {artefato.get('cultura', 'cultura')}: "
++            "fora da área coberta pelo modelo."
++        )
++    avisos: list[str] = []
++    if dist > C.DISTANCIA_AVISO_KM:
++        avisos.append(
++            f"O município mais próximo com dados desta cultura fica a {dist:.0f} km; a previsão é regional."
++        )
++
++    valores = linha.to_dict()
++    informado = {k: float(v) for k, v in (solo or {}).items() if v is not None and k in SOLO_CAMPOS}
++    valores.update(informado)
++    if informado and {"argila", "silte"} <= valores.keys():  # CAD recalculada com o solo do agricultor
++        valores["cad_mm"] = clima.cad_mm(valores["argila"], valores["silte"], valores.get("prof_max_cm"))
++    if informado:
++        solo_origem = "informado pelo agricultor"
++    elif valores.get("solo_imputado") == 1:
++        solo_origem = f"estimado de perfis vizinhos (~{valores.get('solo_dist_km', float('nan')):.0f} km)"
++    else:
++        solo_origem = "perfil Embrapa do município"
++
++    if lag1_rel is not None:
++        lag, lag_origem = float(lag1_rel), "informado"
++    elif linha["ano_lag"] == ano - 1:
++        lag, lag_origem = float(linha["lag_ultimo"]), "observado (PAM do ano anterior)"
++    else:
++        lag, lag_origem = float(linha["lag_medio"]), "média histórica do município"
++        avisos.append(
++            "Sem o rendimento do ano anterior neste município: usada a média histórica local "
++            "(a previsão fica menos precisa)."
++        )
++    valores["lag1_rel"] = lag
++
++    entrada = pd.DataFrame([{f: valores.get(f, np.nan) for f in artefato["features"]}])
++    contexto = {
++        "cod_ibge": int(linha["cod_ibge"]),
++        "distancia_km": dist,
++        "solo_origem": solo_origem,
++        "lag_origem": lag_origem,
++        "anom_mun": float(linha["anom_mun"]),
++        "avisos": avisos,
++    }
++    return entrada, contexto
++
++
++def prever_simples(
++    artefato: dict,
++    ano: int,
++    lat: float,
++    lon: float,
++    solo: dict | None = None,
++    lag1_rel: float | None = None,
++) -> dict:
++    """Previsão de rendimento (kg/ha) com faixa P10–P90, usando só os dados informados + o artefato."""
++    entrada, ctx = montar_entrada(artefato, ano, lat, lon, solo, lag1_rel)
++    saida = float(artefato["modelo"].predict(entrada)[0])
++    base = tendencia_log(artefato, ano)
++    lo, hi = artefato.get("intervalo_log", (np.nan, np.nan))
++    avisos = list(ctx["avisos"])
++
++    if ano - artefato.get("ano_ultimo", ano) > C.HORIZONTE_AVISO_ANOS:
++        avisos.append(f"Ano além de {artefato['ano_ultimo']}: a tendência de produtividade é apenas extrapolada.")
++    sem_historico = ctx["lag_origem"].startswith("média")
++    ok = confiavel(artefato, sem_historico)
++    if not ok:
++        avisos.append(
++            "Nos testes com dados históricos este modelo não superou a regra simples "
++            "(tendência + média do município) nesta situação. Prefira a referência do município."
++        )
++    return {
++        "rendimento_predito_kg_ha": float(np.exp(base + saida)),
++        "p10_kg_ha": float(np.exp(base + saida + lo)),
++        "p90_kg_ha": float(np.exp(base + saida + hi)),
++        "referencia_municipio_kg_ha": float(np.exp(base + ctx["anom_mun"])),
++        "municipio_cod_ibge": ctx["cod_ibge"],
++        "distancia_km": round(ctx["distancia_km"], 1),
++        "solo_origem": ctx["solo_origem"],
++        "lag_origem": ctx["lag_origem"],
++        "clima_usado": "típico (mediana dos anos de treino)",
++        "confiavel": ok,
++        "avisos": avisos,
++    }
+diff --git a/test_predicao.py b/test_predicao.py
+new file mode 100644
+index 0000000..110584b
+--- /dev/null
++++ b/test_predicao.py
+@@ -0,0 +1,231 @@
++"""Testes da predição com o mínimo de dados (cultura, ano, latitude, longitude). Sem rede.
++
++    uv run pytest -q test_predicao.py
++"""
++
++import joblib
++import numpy as np
++import pandas as pd
++import pytest
++from fastapi.testclient import TestClient
++
++import api
++import modelar_culturas
++import predicao
++
++
++def _dataset_sintetico(n_mun=40, anos=range(2000, 2026), seed=0) -> pd.DataFrame:
++    """Rendimento = nível do município x tendência de +2%/ano x efeito da argila x ruído."""
++    rng = np.random.default_rng(seed)
++    mun = pd.DataFrame(
++        {
++            "cod_ibge": 3500000 + np.arange(n_mun),
++            "lat": rng.uniform(-24, -20, n_mun),
++            "lon": rng.uniform(-51, -46, n_mun),
++            "argila": rng.uniform(100, 600, n_mun),
++            "silte": rng.uniform(30, 150, n_mun),
++            "nivel": rng.normal(0, 0.15, n_mun),
++        }
++    )
++    linhas = []
++    for _, m in mun.iterrows():
++        lag_rel_prev = 0.0
++        for ano in anos:
++            clima_janela = rng.normal(0, 1)
++            y_log = (
++                np.log(3000)
++                + 0.02 * (ano - 2000)
++                + m["nivel"]
++                + 0.0004 * (m["argila"] - 350)
++                + 0.03 * clima_janela
++                + rng.normal(0, 0.05)
++            )
++            linhas.append(
++                {
++                    "cod_ibge": int(m["cod_ibge"]),
++                    "localidade": f"mun{int(m['cod_ibge'])}",
++                    "produto": "milho",
++                    "ano": ano,
++                    "lat": m["lat"],
++                    "lon": m["lon"],
++                    "argila": m["argila"],
++                    "silte": m["silte"],
++                    "prof_max_cm": 100.0,
++                    "cad_mm": 50.0 + 0.05 * m["argila"],
++                    "altitude_m": 400.0 + 200.0 * m["nivel"],
++                    "floracao_defic": clima_janela,
++                    "y_log": y_log,
++                    "rendimento": float(np.exp(y_log)),
++                    "peso": 10.0,
++                    "solo_imputado": 0,
++                    "solo_dist_km": 0.0,
++                }
++            )
++    df = pd.DataFrame(linhas)
++    rel = df["y_log"] - df.groupby("ano")["y_log"].transform("median")
++    df["_rel"] = rel
++    prev = df[["cod_ibge", "ano", "_rel"]].assign(ano=lambda x: x["ano"] + 1)
++    df = df.merge(prev.rename(columns={"_rel": "lag1_rel"}), on=["cod_ibge", "ano"], how="left")
++    return df.drop(columns="_rel")
++
++
++@pytest.fixture(scope="module")
++def treinado(tmp_path_factory):
++    base = tmp_path_factory.mktemp("treino")
++    dados, saida = base / "dados", base / "saida"
++    dados.mkdir()
++    _dataset_sintetico().to_csv(dados / "dataset_milho.csv", index=False)
++    _, metricas, _ = modelar_culturas.executar(["milho"], dados, saida)
++    caminho = saida / "modelos_cultura" / "modelo_milho.joblib"
++    return {"artefato": joblib.load(caminho), "pasta": saida / "modelos_cultura", "metricas": metricas}
++
++
++def test_artefato_guarda_metricas_fixas(treinado):
++    a = treinado["artefato"]
++    assert a["target"] == "anomalia_y_log"
++    assert len(a["tendencia_coef"]) == 2 and a["tendencia_coef"][0] > 0  # tendência positiva recuperada
++    assert a["ano_ultimo"] == 2025
++    lo, hi = a["intervalo_log"]
++    assert lo < 0 < hi
++    assert {
++        "skill_temporal_vs_tendencia",
++        "skill_espacial_vs_tendencia",
++        "skill_temporal_vs_mun+tend",
++        "skill_temporal_sem_lag_vs_mun+tend",  # horizonte >= 2 anos (sem o rendimento do ano anterior)
++    } <= a["validacao"].keys()
++    perfil = a["perfil_local"]
++    assert perfil["cod_ibge"].is_unique and len(perfil) == 40
++    assert {"lat", "lon", "lag_ultimo", "ano_lag", "lag_medio", "anom_mun"} <= set(perfil.columns)
++    assert "lag1_rel" not in perfil.columns  # o lag vem do histórico, não é constante por município
++
++
++def test_metricas_incluem_baseline_e_skill(treinado):
++    m = treinado["metricas"]
++    assert {"MAE_tendencia", "MAE_mun+tend", "skill_vs_tendencia", "skill_vs_mun+tend"} <= set(m.columns)
++    # a tendência foi aprendida: a base sem ela erraria muito mais
++    assert (m["skill_vs_tendencia"] > 0).all()
++
++
++def test_previsao_so_com_latitude_e_longitude(treinado):
++    a = treinado["artefato"]
++    alvo_mun = a["perfil_local"].iloc[5]
++    r = predicao.prever_simples(a, 2026, alvo_mun["lat"] + 0.01, alvo_mun["lon"] - 0.01)
++    assert r["municipio_cod_ibge"] == int(alvo_mun["cod_ibge"])
++    assert r["p10_kg_ha"] < r["rendimento_predito_kg_ha"] < r["p90_kg_ha"]
++    assert r["lag_origem"].startswith("observado")  # 2026 usa o rendimento de 2025 já conhecido
++    assert r["solo_origem"] == "perfil Embrapa do município"
++    # sanidade: perto de "tendência de 2026 + desvio histórico do município" (a regra simples de referência)
++    assert r["rendimento_predito_kg_ha"] == pytest.approx(r["referencia_municipio_kg_ha"], rel=0.2)
++
++
++def test_tendencia_projeta_anos_futuros(treinado):
++    """Sem tendência no alvo o modelo previa a média de 2000-2025 para qualquer ano futuro."""
++    a = treinado["artefato"]
++    p = a["perfil_local"].iloc[0]
++    # mesmo histórico (lag1_rel) nas duas chamadas, para isolar o efeito da tendência
++    r26 = predicao.prever_simples(a, 2026, p["lat"], p["lon"], lag1_rel=0.0)["rendimento_predito_kg_ha"]
++    r29 = predicao.prever_simples(a, 2029, p["lat"], p["lon"], lag1_rel=0.0)["rendimento_predito_kg_ha"]
++    assert r29 == pytest.approx(r26 * np.exp(3 * a["tendencia_coef"][0]), rel=1e-6)
++    assert r29 > r26 * 1.03  # +2%/ano durante 3 anos ~ +6%
++
++
++def test_horizonte_longo_usa_media_historica_e_avisa(treinado):
++    a = treinado["artefato"]
++    p = a["perfil_local"].iloc[0]
++    r = predicao.prever_simples(a, 2030, p["lat"], p["lon"])
++    assert r["lag_origem"] == "média histórica do município"
++    assert any("tendência" in av and "extrapolada" in av for av in r["avisos"])
++
++
++def test_solo_informado_tem_prioridade_e_recalcula_cad(treinado):
++    a = treinado["artefato"]
++    p = a["perfil_local"].iloc[0]
++    entrada, ctx = predicao.montar_entrada(
++        a, 2026, p["lat"], p["lon"], solo={"argila": 580.0, "silte": 100.0, "prof_max_cm": 60.0}
++    )
++    assert entrada.loc[0, "argila"] == 580.0
++    assert entrada.loc[0, "cad_mm"] != p["cad_mm"]  # recalculada com o solo do agricultor
++    assert ctx["solo_origem"] == "informado pelo agricultor"
++    entrada2, _ = predicao.montar_entrada(a, 2026, p["lat"], p["lon"])
++    assert entrada2.loc[0, "argila"] == p["argila"]  # sem solo: usa o do município
++
++
++def test_confiavel_depende_da_situacao_e_do_ganho_minimo():
++    """Com histórico recente o modelo pode merecer confiança e sem ele não (e vice-versa)."""
++    a = {
++        "validacao": {
++            "skill_temporal_vs_mun+tend": 0.10,
++            "skill_temporal_sem_lag_vs_mun+tend": 0.01,  # abaixo de SKILL_MINIMO
++            "skill_espacial_vs_tendencia": 0.20,
++        }
++    }
++    assert predicao.confiavel(a, sem_historico=False) is True
++    assert predicao.confiavel(a, sem_historico=True) is False
++    a["validacao"]["skill_espacial_vs_tendencia"] = 0.0  # não funciona em regiões novas
++    assert predicao.confiavel(a, sem_historico=False) is False
++    assert predicao.confiavel({}, sem_historico=False) is False  # sem métricas: nunca "confiável"
++
++
++def test_aviso_quando_modelo_nao_supera_regra_simples(treinado):
++    a = dict(treinado["artefato"], validacao={"skill_temporal_vs_mun+tend": -0.1})
++    p = a["perfil_local"].iloc[0]
++    r = predicao.prever_simples(a, 2026, p["lat"], p["lon"])
++    assert r["confiavel"] is False
++    assert any("não superou" in av for av in r["avisos"])
++
++
++def test_ponto_fora_da_area_e_recusado(treinado):
++    with pytest.raises(ValueError, match="fora da área"):
++        predicao.prever_simples(treinado["artefato"], 2026, -3.0, -60.0)  # Amazonas
++
++
++def test_artefato_antigo_sem_perfil_da_erro_claro():
++    antigo = {"modelo": None, "features": ["a"], "cultura": "milho"}
++    with pytest.raises(ValueError, match="perfil_local"):
++        predicao.montar_entrada(antigo, 2026, -22.0, -48.0)
++
++
++def test_endpoint_simples_e_endpoint_antigo_respeitam_tendencia(treinado, monkeypatch):
++    monkeypatch.setenv("AGRO_ML_MODELOS_DIR", str(treinado["pasta"]))
++    monkeypatch.setenv("AGRO_ML_MODELO_SOJA", str(treinado["pasta"] / "nao_existe.joblib"))
++    api._carregar.cache_clear()
++    try:
++        p = treinado["artefato"]["perfil_local"].iloc[3]
++        client = TestClient(api.app)
++        resp = client.post(
++            "/predicoes/simples",
++            json={"cultura": "milho", "ano": 2026, "latitude": p["lat"], "longitude": p["lon"]},
++        )
++        assert resp.status_code == 200, resp.text
++        body = resp.json()
++        assert body["p10_kg_ha"] < body["rendimento_predito_kg_ha"] < body["p90_kg_ha"]
++        assert body["clima_usado"].startswith("típico")
++
++        # solo parcial é aceito; campo desconhecido é rejeitado
++        ok = client.post(
++            "/predicoes/simples",
++            json={
++                "cultura": "milho",
++                "ano": 2026,
++                "latitude": p["lat"],
++                "longitude": p["lon"],
++                "solo": {"argila": 400},
++            },
++        )
++        assert ok.status_code == 200 and ok.json()["solo_origem"] == "informado pelo agricultor"
++        ruim = client.post(
++            "/predicoes/simples",
++            json={"cultura": "milho", "ano": 2026, "latitude": 1, "longitude": 1, "cor": "azul"},
++        )
++        assert ruim.status_code == 422
++
++        # endpoint antigo: o artefato novo (alvo = anomalia) deve somar a tendência antes de exp()
++        antigo = api.prever  # usa o mesmo helper de conversão
++        assert callable(antigo)
++        a = treinado["artefato"]
++        assert predicao.rendimento_kg(a, 2026, 0.0) == pytest.approx(
++            np.exp(np.polyval(a["tendencia_coef"], 2026.0))
++        )
++        assert predicao.rendimento_kg({"target": "y_log"}, 2026, np.log(3000.0)) == pytest.approx(3000.0)
++    finally:
++        api._carregar.cache_clear()

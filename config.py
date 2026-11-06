@@ -34,6 +34,14 @@ CULTURAS = [
     "mandioca",
 ]
 
+# --- Predição com o mínimo de dados do agricultor (predicao.py) ---------------------------------
+# O agricultor informa só cultura, ano, latitude e longitude. O restante vem do "perfil local" salvo no
+# artefato de cada cultura. Premissas abaixo: revisar com CATI/IAC.
+DISTANCIA_AVISO_KM = 50.0  # município mais próximo com dado da cultura além disso => aviso
+DISTANCIA_MAX_KM = 150.0  # além disso o ponto está fora da área coberta => recusa
+HORIZONTE_AVISO_ANOS = 3  # anos além do último dado em que a tendência é só extrapolada => aviso
+SKILL_MINIMO = 0.03  # ganho mínimo (3% menos erro) sobre a melhor regra simples para o modelo ser 'confiável'
+
 # --- Quebras de série documentadas na PAM/IBGE (agrobr.ibge.pam) -------------------------------
 # laranja <= 2000: rendimento em frutos/ha (mil frutos), não kg/ha.
 # café <= 2001: "em coco"; a partir de 2002: "beneficiado". Sem conversão implícita.

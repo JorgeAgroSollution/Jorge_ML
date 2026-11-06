@@ -10,8 +10,10 @@
 | `alvo.py` | Limpeza auditável do rendimento (PAM) + tendência tecnológica (ajustada só no treino). |
 | `build_dataset.py` | Coleta e montagem ponta a ponta, junção por código IBGE, uma tabela por cultura. |
 | `avaliar.py` | Validação espacial e temporal, baseline, quantis P10/P90 calibrados (conformal), importância por permutação. |
-| `modelar_culturas.py` | Compara ElasticNet, RandomForest e HistGradientBoosting por cultura, treina o vencedor e salva previsões. |
+| `modelar_culturas.py` | Compara ElasticNet, RandomForest e HistGradientBoosting por cultura (alvo = anomalia sobre a tendência, com skill vs. regras simples), treina o vencedor e grava no artefato tendência, faixa P10–P90, skill e `perfil_local`. |
+| `predicao.py` | Previsão com o mínimo de dados do agricultor (cultura, ano, latitude, longitude; solo opcional), usando só o que está no artefato. |
 | `test_pipeline.py` | Testes, inclusive recuperação de sinal em dados sintéticos. |
+| `test_predicao.py` | Testes do treino com artefatos fixos e da previsão por latitude/longitude. |
 
 ## Uso
 ```bash
@@ -20,7 +22,7 @@ python build_dataset.py --pam-csv data/raw/df_market_pam.csv     # ou --coletar-
 python avaliar.py --dados data/processed/dataset_completo.csv
 python avaliar.py --dados df_merged.csv --legado                  # avalia o CSV antigo com o método novo
 python -m pytest -q test_pipeline.py
-uv run python modelar_culturas.py                                # todas as culturas, exceto soja
+uv run python modelar_culturas.py                                # todas as culturas (gera os artefatos usados pela API)
 uv run python modelar_culturas.py --culturas milho cafe
 ```
 
@@ -54,6 +56,35 @@ diários devem ser preparados pelo consumidor ou por uma etapa de coleta separad
 `resultados/previsoes_culturas.csv`. A escolha do modelo usa o menor MAE em
 kg/ha médio na validação temporal; as métricas espacial e logarítmica também
 ficam registradas para comparação.
+
+### Previsão com o mínimo de dados do agricultor
+
+`POST /predicoes/simples` pede só `cultura`, `ano`, `latitude` e `longitude`. O solo do talhão é opcional
+(qualquer campo informado substitui o do município). Não é preciso enviar clima diário, código IBGE nem
+`lag1_rel`:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predicoes/simples -H 'Content-Type: application/json' \
+  -d '{"cultura": "milho", "ano": 2026, "latitude": -21.17, "longitude": -47.81}'
+```
+
+A resposta traz o rendimento previsto, a faixa `p10_kg_ha`–`p90_kg_ha` ("ano ruim" a "ano bom"), a
+`referencia_municipio_kg_ha` (tendência + média histórica do município), de onde veio o solo e o histórico, um
+indicador `confiavel` e `avisos`.
+
+O que é calculado **uma vez, no treino**, e reaproveitado (dentro de `modelo_<cultura>.joblib`):
+
+| Chave do artefato | Conteúdo |
+|---|---|
+| `tendencia_coef`, `ano_ultimo` | Reta de ganho tecnológico (log-rendimento) ajustada com todos os dados. |
+| `intervalo_log` | Quantis 10% e 90% do erro fora da amostra (o mais largo entre validação espacial e temporal). |
+| `validacao` | MAE e skill (espacial/temporal) vs. tendência e vs. tendência + média do município, inclusive **sem o rendimento do ano anterior** (horizonte ≥ 2 anos). `predicao.confiavel` exige ganho ≥ `SKILL_MINIMO` sobre a melhor regra simples da situação. |
+| `perfil_local` | Por município: clima típico por janela, altitude, solo, CAD, último `lag1_rel` e média histórica. |
+
+Limites assumidos (ver `config.py` e `predicao.py`): o clima da safra futura não é conhecido, então usa-se o
+clima típico; o município usado é o mais próximo **com dado da cultura** (aviso acima de 50 km, recusa acima de
+150 km); anos além de `ano_ultimo + 3` só extrapolam a tendência. Artefatos gerados antes desta versão não têm
+`perfil_local`: rode `uv run python modelar_culturas.py` de novo.
 
 ## O que foi testado aqui (sem rede)
 - Física (ETo, balanço hídrico), janelas, limpeza, tendência, lag sem vazamento e avaliação: `test_pipeline.py` passa.

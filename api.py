@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 import clima
 import config as C
+import predicao
 
 
 class ClimaDiario(BaseModel):
@@ -75,6 +76,57 @@ class PredicaoRequest(BaseModel):
         return self
 
 
+class SoloOpcional(BaseModel):
+    """Solo do talhão. Todos os campos são opcionais: o que faltar vem do perfil do município."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ph_h2o: float | None = None
+    carbono_organico: float | None = None
+    ctc: float | None = None
+    saturacao_bases: float | None = None
+    aluminio: float | None = None
+    argila: float | None = None
+    silte: float | None = None
+    prof_max_cm: float | None = Field(default=None, ge=0)
+
+
+class PredicaoSimplesRequest(BaseModel):
+    """Mínimo que o agricultor precisa informar: cultura, ano da safra e localização."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cultura: str = Field(min_length=1)
+    ano: int = Field(ge=C.ANO_INICIAL, le=C.ANO_FINAL + 10)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    solo: SoloOpcional | None = None
+    lag1_rel: float | None = None  # opcional: se o consumidor souber, substitui o histórico do município
+
+    @model_validator(mode="after")
+    def cultura_conhecida(self) -> "PredicaoSimplesRequest":
+        if self.cultura not in C.CALENDARIOS:
+            raise ValueError(f"Cultura não suportada: {self.cultura}")
+        return self
+
+
+class PredicaoSimplesResponse(BaseModel):
+    cultura: str
+    ano: int
+    rendimento_predito_kg_ha: float
+    p10_kg_ha: float
+    p90_kg_ha: float
+    referencia_municipio_kg_ha: float
+    municipio_cod_ibge: int
+    distancia_km: float
+    solo_origem: str
+    lag_origem: str
+    clima_usado: str
+    confiavel: bool
+    avisos: list[str]
+    modelo: str
+
+
 class PredicaoResponse(BaseModel):
     cultura: str
     cod_ibge: int
@@ -114,7 +166,7 @@ def _caminhos_modelos() -> dict[str, Path]:
     }
     soja = _artefato_soja()
     if soja.exists():
-        caminhos["soja"] = soja
+        caminhos.setdefault("soja", soja)  # o artefato legado só vale se não houver um novo na pasta
     return caminhos
 
 
@@ -137,6 +189,7 @@ def _carregar(cultura: str) -> dict:
         "modelo_nome": artefato.get("modelo_nome", type(modelo).__name__),
         "caminho": caminho,
         "unidade_predicao": artefato.get("unidade_predicao", "kg/ha"),
+        "bruto": artefato,
     }
 
 
@@ -196,7 +249,7 @@ def prever(req: PredicaoRequest) -> PredicaoResponse:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Falha inesperada durante a predição.") from exc
-    rendimento = float(np.exp(pred_log))
+    rendimento = predicao.rendimento_kg(artefato["bruto"], req.ano, pred_log)
     if not np.isfinite(rendimento) or rendimento < 0:
         raise HTTPException(status_code=500, detail="O modelo produziu uma predição inválida.")
     return PredicaoResponse(
@@ -226,9 +279,31 @@ def modelos() -> list[ModeloInfo]:
     return catalogo_modelos()
 
 
+def prever_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
+    try:
+        artefato = _carregar(req.cultura)
+        solo = req.solo.model_dump() if req.solo else None
+        saida = predicao.prever_simples(
+            artefato["bruto"], req.ano, req.latitude, req.longitude, solo, req.lag1_rel
+        )
+    except (FileNotFoundError, RuntimeError, ValueError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Falha inesperada durante a predição.") from exc
+    return PredicaoSimplesResponse(
+        cultura=req.cultura, ano=req.ano, modelo=artefato["modelo_nome"], **saida
+    )
+
+
+@app.post("/predicoes/simples", response_model=PredicaoSimplesResponse, tags=["predições"])
+def predicoes_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
+    """Previsão só com cultura, ano, latitude e longitude (solo opcional)."""
+    return prever_simples(req)
+
+
 @app.post("/predicoes", response_model=PredicaoResponse, tags=["predições"])
 def predicoes(req: PredicaoRequest) -> PredicaoResponse:
     return prever(req)
 
 
-__all__ = ["app", "catalogo_modelos", "prever"]
+__all__ = ["app", "catalogo_modelos", "prever", "prever_simples"]
