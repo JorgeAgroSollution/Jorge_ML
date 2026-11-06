@@ -37,7 +37,12 @@ def _pipeline(nome: str) -> Pipeline:
         passos.extend(
             [
                 ("escala", StandardScaler()),
-                ("modelo", ElasticNet(alpha=0.1, l1_ratio=0.5, max_iter=10_000, random_state=42)),
+                (
+                    "modelo",
+                    ElasticNet(
+                        alpha=0.1, l1_ratio=0.5, max_iter=10_000, random_state=42
+                    ),
+                ),
             ]
         )
     elif nome == "RandomForest":
@@ -73,7 +78,9 @@ def _pipeline(nome: str) -> Pipeline:
 
 def analisar_dados(df: pd.DataFrame, cultura: str) -> dict:
     """Resume qualidade, cobertura e distribuição do dataset de uma cultura."""
-    n_municipios = df["cod_ibge"].nunique() if "cod_ibge" in df else df["localidade"].nunique()
+    n_municipios = (
+        df["cod_ibge"].nunique() if "cod_ibge" in df else df["localidade"].nunique()
+    )
     features = selecionar_features(df, com_coordenadas=False, com_lag=True)
     ausentes_features = df[features].isna()
     return {
@@ -105,8 +112,14 @@ def carregar_cultura(cultura: str, diretorio: Path = C.DIR_PROC) -> pd.DataFrame
     obrigatorias = {"ano", "produto", "rendimento", "y_log", "peso", "cod_ibge"}
     faltantes = obrigatorias - set(df.columns)
     if faltantes:
-        raise ValueError(f"{caminho} não contém colunas obrigatórias: {sorted(faltantes)}")
-    return df[df["produto"].eq(cultura)].dropna(subset=["rendimento", "y_log"]).reset_index(drop=True)
+        raise ValueError(
+            f"{caminho} não contém colunas obrigatórias: {sorted(faltantes)}"
+        )
+    return (
+        df[df["produto"].eq(cultura)]
+        .dropna(subset=["rendimento", "y_log"])
+        .reset_index(drop=True)
+    )
 
 
 def _grupos_espaciais(df: pd.DataFrame, k_max: int = 8) -> tuple[np.ndarray, int]:
@@ -115,11 +128,15 @@ def _grupos_espaciais(df: pd.DataFrame, k_max: int = 8) -> tuple[np.ndarray, int
     municipios = df.groupby("cod_ibge")[["lat", "lon"]].first().dropna()
     k = min(k_max, len(municipios))
     if k < 2:
-        raise ValueError("São necessários pelo menos dois municípios para validação espacial.")
+        raise ValueError(
+            "São necessários pelo menos dois municípios para validação espacial."
+        )
     grupos_mun = KMeans(n_clusters=k, n_init=10, random_state=42).fit_predict(
         municipios[["lat", "lon"]]
     )
-    return df["cod_ibge"].map(pd.Series(grupos_mun, index=municipios.index)).to_numpy(), k
+    return df["cod_ibge"].map(
+        pd.Series(grupos_mun, index=municipios.index)
+    ).to_numpy(), k
 
 
 def _metricas(y_log: pd.Series, pred_log: np.ndarray) -> dict:
@@ -160,7 +177,9 @@ def _avaliar_split(
         base = tend.predict(dte["ano"])
         pred = base + modelo.predict(dte[features])
         met = _metricas(dte["y_log"], pred)
-        anom_mun = pd.Series(anom, index=dtr["cod_ibge"].to_numpy()).groupby(level=0).mean()
+        anom_mun = (
+            pd.Series(anom, index=dtr["cod_ibge"].to_numpy()).groupby(level=0).mean()
+        )
         base_mun = base + dte["cod_ibge"].map(anom_mun).fillna(0).to_numpy()
         real = np.exp(dte["y_log"].to_numpy())
         mae_tend = float(np.mean(np.abs(real - np.exp(base))))
@@ -179,10 +198,19 @@ def _avaliar_split(
             rel = dtr["y_log"] - dtr.groupby("ano")["y_log"].transform("median")
             lag_medio = rel.groupby(dtr["cod_ibge"]).mean()
             sem_lag = dte.assign(lag1_rel=dte["cod_ibge"].map(lag_medio))
-            mae_sl = float(np.mean(np.abs(real - np.exp(base + modelo.predict(sem_lag[features])))))
-            met.update({"MAE_sem_lag": mae_sl, "skill_sem_lag_vs_mun+tend": 1 - mae_sl / mae_mun})
+            mae_sl = float(
+                np.mean(np.abs(real - np.exp(base + modelo.predict(sem_lag[features]))))
+            )
+            met.update(
+                {
+                    "MAE_sem_lag": mae_sl,
+                    "skill_sem_lag_vs_mun+tend": 1 - mae_sl / mae_mun,
+                }
+            )
         if residuos is not None:
-            residuos.setdefault((nome_modelo, validacao), []).append(dte["y_log"].to_numpy() - pred)
+            residuos.setdefault((nome_modelo, validacao), []).append(
+                dte["y_log"].to_numpy() - pred
+            )
         met.update(
             cultura=str(df.iloc[0]["produto"]),
             modelo=nome_modelo,
@@ -208,7 +236,9 @@ def _splits_temporais(df: pd.DataFrame) -> list[tuple[np.ndarray, np.ndarray]]:
     return splits
 
 
-def avaliar_modelos(df: pd.DataFrame, cultura: str) -> tuple[pd.DataFrame, list[str], dict]:
+def avaliar_modelos(
+    df: pd.DataFrame, cultura: str
+) -> tuple[pd.DataFrame, list[str], dict]:
     """Compara os modelos em validações espacial e temporal. Devolve (métricas, features, resíduos)."""
     features = selecionar_features(df, com_coordenadas=False, com_lag=True)
     if not features:
@@ -220,11 +250,15 @@ def avaliar_modelos(df: pd.DataFrame, cultura: str) -> tuple[pd.DataFrame, list[
     linhas, residuos = [], {}
     for nome in MODELOS:
         linhas.extend(
-            _avaliar_split(df, features, nome, espaciais, "espacial (regiões novas)", residuos)
+            _avaliar_split(
+                df, features, nome, espaciais, "espacial (regiões novas)", residuos
+            )
         )
         if temporais:
             linhas.extend(
-                _avaliar_split(df, features, nome, temporais, "temporal (anos futuros)", residuos)
+                _avaliar_split(
+                    df, features, nome, temporais, "temporal (anos futuros)", residuos
+                )
             )
     return pd.DataFrame(linhas), features, residuos
 
@@ -233,7 +267,9 @@ def selecionar_modelo(metricas: pd.DataFrame) -> str:
     """Escolhe o menor MAE temporal; falha explicitamente sem validação temporal."""
     temporais = metricas[metricas["validacao"].eq("temporal (anos futuros)")]
     if temporais.empty:
-        raise ValueError("Não foi possível selecionar modelo: validação temporal indisponível.")
+        raise ValueError(
+            "Não foi possível selecionar modelo: validação temporal indisponível."
+        )
     resumo = temporais.groupby("modelo", as_index=False)["MAE_kg_ha"].mean()
     return str(resumo.sort_values(["MAE_kg_ha", "modelo"]).iloc[0]["modelo"])
 
@@ -249,8 +285,13 @@ def resumo_validacao(metricas: pd.DataFrame, escolhido: str) -> dict:
         out[f"MAE_{chave}_kg_ha"] = float(v["MAE_kg_ha"].mean())
         out[f"skill_{chave}_vs_tendencia"] = float(v["skill_vs_tendencia"].mean())
         out[f"skill_{chave}_vs_mun+tend"] = float(v["skill_vs_mun+tend"].mean())
-        if "skill_sem_lag_vs_mun+tend" in v and v["skill_sem_lag_vs_mun+tend"].notna().any():
-            out[f"skill_{chave}_sem_lag_vs_mun+tend"] = float(v["skill_sem_lag_vs_mun+tend"].mean())
+        if (
+            "skill_sem_lag_vs_mun+tend" in v
+            and v["skill_sem_lag_vs_mun+tend"].notna().any()
+        ):
+            out[f"skill_{chave}_sem_lag_vs_mun+tend"] = float(
+                v["skill_sem_lag_vs_mun+tend"].mean()
+            )
     return out
 
 
@@ -278,7 +319,9 @@ def treinar_finais(
     base = tend.predict(df["ano"])
     modelo = _pipeline(nome_modelo)
     modelo.fit(
-        df[features], df["y_log"].to_numpy() - base, modelo__sample_weight=df["peso"].to_numpy()
+        df[features],
+        df["y_log"].to_numpy() - base,
+        modelo__sample_weight=df["peso"].to_numpy(),
     )
     pred = np.exp(base + modelo.predict(df[features]))
     validacao = validacao or {}
@@ -341,7 +384,9 @@ def executar(
     metricas_df = pd.concat(metricas, ignore_index=True)
     previsoes_df = pd.concat(previsoes, ignore_index=True)
     diretorio_resultados.mkdir(parents=True, exist_ok=True)
-    analise_df.to_csv(diretorio_resultados / "relatorio_analise_culturas.csv", index=False)
+    analise_df.to_csv(
+        diretorio_resultados / "relatorio_analise_culturas.csv", index=False
+    )
     metricas_df.to_csv(diretorio_resultados / "metricas_modelos.csv", index=False)
     previsoes_df.to_csv(diretorio_resultados / "previsoes_culturas.csv", index=False)
     return analise_df, metricas_df, previsoes_df
