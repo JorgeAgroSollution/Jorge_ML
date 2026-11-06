@@ -8,6 +8,7 @@ import avaliar
 import build_dataset
 import clima
 import config as C
+import modelar_culturas
 
 
 def _diario_sintetico(seed, anos=("1999-01-01", "2025-12-31"), fator_chuva=None):
@@ -160,6 +161,35 @@ def test_avaliacao_recupera_sinal_sintetico():
     )  # o fator verdadeiro aparece no topo
     print(res.round(3).to_string(index=False))
     print(imp.head(5))
+
+
+def test_selecao_modelo_prioriza_mae_temporal():
+    metricas = pd.DataFrame(
+        [
+            {"modelo": "ElasticNet", "validacao": "temporal (anos futuros)", "MAE_kg_ha": 100},
+            {"modelo": "RandomForest", "validacao": "temporal (anos futuros)", "MAE_kg_ha": 80},
+            {"modelo": "HistGradientBoosting", "validacao": "espacial (regiões novas)", "MAE_kg_ha": 10},
+        ]
+    )
+    assert modelar_culturas.selecionar_modelo(metricas) == "RandomForest"
+
+
+def test_analise_nao_conta_ausencia_de_colunas_irrelevantes():
+    df = pd.DataFrame(
+        {
+            "produto": ["trigo", "trigo", "trigo"],
+            "cod_ibge": [1, 2, 3],
+            "localidade": ["a", "b", "c"],
+            "ano": [2020, 2021, 2022],
+            "rendimento": [2000.0, 2200.0, 2100.0],
+            "y_log": np.log([2000.0, 2200.0, 2100.0]),
+            "peso": [1.0, 1.0, 1.0],
+            "feature": [1.0, 2.0, np.nan],
+            "janela_inexistente_tmax": [np.nan, np.nan, np.nan],
+        }
+    )
+    resumo = modelar_culturas.analisar_dados(df, "trigo")
+    assert resumo["linhas_com_ausencia_features"] == 1
 
 
 if __name__ == "__main__":

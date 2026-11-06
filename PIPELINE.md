@@ -41,6 +41,20 @@ Os dois pontos de entrada são:
 
 - [`build_dataset.py`](./build_dataset.py): coleta e monta o dataset;
 - [`avaliar.py`](./avaliar.py): treina e avalia o modelo.
+- [`modelar_culturas.py`](./modelar_culturas.py): compara três modelos por
+  cultura, treina o vencedor e salva artefatos e predições.
+
+Para executar a comparação por cultura (todas, exceto soja):
+
+```bash
+uv run python modelar_culturas.py
+```
+
+O vencedor é escolhido pelo menor MAE médio em kg/ha na validação temporal.
+São comparados `ElasticNet`, `RandomForest` e `HistGradientBoosting`. O
+comando gera `resultados/relatorio_analise_culturas.csv`,
+`resultados/metricas_modelos.csv`, um `modelo_<cultura>.joblib` em
+`resultados/modelos_cultura/` e `resultados/previsoes_culturas.csv`.
 
 ## 1. Configuração geral
 

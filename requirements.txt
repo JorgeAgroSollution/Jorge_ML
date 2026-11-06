@@ -1,7 +1,9 @@
 agrobr>=2.0
+fastapi>=0.115
 pandas
 numpy
 scikit-learn>=1.3
 pyarrow
 geopandas   # malha municipal (centroides) via agrobr.ibge.malha_municipal
 pytest
+uvicorn[standard]>=0.34
