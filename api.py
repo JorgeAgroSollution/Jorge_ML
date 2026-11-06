@@ -26,48 +26,127 @@ class ClimaDiario(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    data: str
-    temp_media: float
-    temp_max: float
-    temp_min: float
-    precip_mm: float = Field(ge=0)
-    umidade_rel: float = Field(ge=0, le=100)
-    radiacao_mj: float = Field(ge=0)
-    vento_ms: float = Field(ge=0)
-    ps_kpa: float | None = Field(default=None, gt=0)
-    umidade_solo_raiz: float
+    data: str = Field(description="Data da observação no formato ISO 8601 (AAAA-MM-DD).")
+    temp_media: float = Field(description="Temperatura média diária, em °C.")
+    temp_max: float = Field(description="Temperatura máxima diária, em °C.")
+    temp_min: float = Field(description="Temperatura mínima diária, em °C.")
+    precip_mm: float = Field(
+        ge=0, description="Precipitação acumulada no dia, em milímetros."
+    )
+    umidade_rel: float = Field(
+        ge=0, le=100, description="Umidade relativa média do ar, em porcentagem."
+    )
+    radiacao_mj: float = Field(
+        ge=0, description="Radiação solar diária, em MJ/m²/dia."
+    )
+    vento_ms: float = Field(ge=0, description="Velocidade média do vento, em m/s.")
+    ps_kpa: float | None = Field(
+        default=None,
+        gt=0,
+        description="Pressão atmosférica média, em kPa. Opcional; pode ser estimada.",
+    )
+    umidade_solo_raiz: float = Field(
+        description="Umidade relativa do solo na zona radicular, conforme a fonte climática."
+    )
 
 
 class SoloEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    ph_h2o: float
-    carbono_organico: float
-    ctc: float
-    saturacao_bases: float
-    aluminio: float
-    argila: float
-    silte: float
-    prof_max_cm: float = Field(ge=0)
+    ph_h2o: float = Field(description="pH medido em água.")
+    carbono_organico: float = Field(description="Teor de carbono orgânico do solo.")
+    ctc: float = Field(description="Capacidade de troca catiônica.")
+    saturacao_bases: float = Field(description="Saturação por bases, em porcentagem.")
+    aluminio: float = Field(description="Teor de alumínio do solo.")
+    argila: float = Field(description="Teor de argila, em g/kg.")
+    silte: float = Field(description="Teor de silte, em g/kg.")
+    prof_max_cm: float = Field(
+        ge=0, description="Profundidade máxima representada pelo perfil, em cm."
+    )
 
 
 class MunicipioEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    cod_ibge: int = Field(gt=0)
-    latitude: float = Field(ge=-90, le=90)
-    longitude: float = Field(ge=-180, le=180)
+    cod_ibge: int = Field(gt=0, description="Código IBGE do município.")
+    latitude: float = Field(
+        ge=-90, le=90, description="Latitude representativa do município, em graus."
+    )
+    longitude: float = Field(
+        ge=-180, le=180, description="Longitude representativa do município, em graus."
+    )
 
 
 class PredicaoRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    """Entrada completa: dados locais de município, solo e clima diário."""
 
-    cultura: str = Field(min_length=1)
-    ano: int = Field(ge=C.ANO_INICIAL, le=C.ANO_FINAL + 10)
-    municipio: MunicipioEntrada
-    solo: SoloEntrada
-    clima_diario: list[ClimaDiario] = Field(min_length=1)
-    lag1_rel: float
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "cultura": "milho",
+                "ano": 2026,
+                "municipio": {
+                    "cod_ibge": 3500105,
+                    "latitude": -22.3,
+                    "longitude": -48.3,
+                },
+                "solo": {
+                    "ph_h2o": 5.5,
+                    "carbono_organico": 15,
+                    "ctc": 80,
+                    "saturacao_bases": 50,
+                    "aluminio": 2,
+                    "argila": 350,
+                    "silte": 250,
+                    "prof_max_cm": 100,
+                },
+                "lag1_rel": 0.0,
+                "clima_diario": [
+                    {
+                        "data": "2025-10-01",
+                        "temp_media": 23,
+                        "temp_max": 30,
+                        "temp_min": 17,
+                        "precip_mm": 4,
+                        "umidade_rel": 70,
+                        "radiacao_mj": 20,
+                        "vento_ms": 2,
+                        "ps_kpa": 95,
+                        "umidade_solo_raiz": 0.6,
+                    }
+                ],
+            }
+        },
+    )
+
+    cultura: str = Field(
+        min_length=1,
+        description="Cultura modelada. Deve corresponder a uma cultura disponível no catálogo.",
+        examples=["milho"],
+    )
+    ano: int = Field(
+        ge=C.ANO_INICIAL,
+        le=C.ANO_FINAL + 10,
+        description="Ano da safra a ser prevista.",
+        examples=[2026],
+    )
+    municipio: MunicipioEntrada = Field(
+        description="Identificação e coordenadas do município da previsão."
+    )
+    solo: SoloEntrada = Field(
+        description="Perfil de solo usado para calcular as variáveis edáficas."
+    )
+    clima_diario: list[ClimaDiario] = Field(
+        min_length=1,
+        description=(
+            "Série diária usada para calcular as features fenológicas. "
+            "Envie todos os dias necessários às janelas da cultura, sem lacunas."
+        ),
+    )
+    lag1_rel: float = Field(
+        description="Variação relativa do rendimento da safra anterior no município."
+    )
 
     @model_validator(mode="after")
     def cultura_conhecida(self) -> "PredicaoRequest":
@@ -81,27 +160,68 @@ class SoloOpcional(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    ph_h2o: float | None = None
-    carbono_organico: float | None = None
-    ctc: float | None = None
-    saturacao_bases: float | None = None
-    aluminio: float | None = None
-    argila: float | None = None
-    silte: float | None = None
-    prof_max_cm: float | None = Field(default=None, ge=0)
+    ph_h2o: float | None = Field(default=None, description="pH medido em água.")
+    carbono_organico: float | None = Field(default=None, description="Teor de carbono orgânico.")
+    ctc: float | None = Field(default=None, description="Capacidade de troca catiônica.")
+    saturacao_bases: float | None = Field(
+        default=None, description="Saturação por bases, em porcentagem."
+    )
+    aluminio: float | None = Field(default=None, description="Teor de alumínio do solo.")
+    argila: float | None = Field(default=None, description="Teor de argila, em g/kg.")
+    silte: float | None = Field(default=None, description="Teor de silte, em g/kg.")
+    prof_max_cm: float | None = Field(
+        default=None, ge=0, description="Profundidade máxima representada, em cm."
+    )
 
 
 class PredicaoSimplesRequest(BaseModel):
     """Mínimo que o agricultor precisa informar: cultura, ano da safra e localização."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "cultura": "milho",
+                "ano": 2026,
+                "latitude": -21.17,
+                "longitude": -47.81,
+                "solo": {"ph_h2o": 5.5, "argila": 350, "prof_max_cm": 100},
+                "lag1_rel": 0.02,
+            }
+        },
+    )
 
-    cultura: str = Field(min_length=1)
-    ano: int = Field(ge=C.ANO_INICIAL, le=C.ANO_FINAL + 10)
-    latitude: float = Field(ge=-90, le=90)
-    longitude: float = Field(ge=-180, le=180)
-    solo: SoloOpcional | None = None
-    lag1_rel: float | None = None  # opcional: se o consumidor souber, substitui o histórico do município
+    cultura: str = Field(
+        min_length=1,
+        description="Cultura modelada. Deve corresponder a uma cultura disponível no catálogo.",
+        examples=["milho"],
+    )
+    ano: int = Field(
+        ge=C.ANO_INICIAL,
+        le=C.ANO_FINAL + 10,
+        description="Ano da safra a ser prevista.",
+        examples=[2026],
+    )
+    latitude: float = Field(
+        ge=-90, le=90, description="Latitude do local, em graus.", examples=[-21.17]
+    )
+    longitude: float = Field(
+        ge=-180,
+        le=180,
+        description="Longitude do local, em graus.",
+        examples=[-47.81],
+    )
+    solo: SoloOpcional | None = Field(
+        default=None,
+        description="Dados do talhão. Campos informados substituem o perfil municipal.",
+    )
+    lag1_rel: float | None = Field(
+        default=None,
+        description=(
+            "Variação relativa do rendimento anterior. Se omitida, usa o histórico "
+            "do município mais próximo disponível."
+        ),
+    )
 
     @model_validator(mode="after")
     def cultura_conhecida(self) -> "PredicaoSimplesRequest":
@@ -111,6 +231,27 @@ class PredicaoSimplesRequest(BaseModel):
 
 
 class PredicaoSimplesResponse(BaseModel):
+    """Resultado com estimativa, intervalo e indicação das fontes usadas."""
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "cultura": "milho",
+            "ano": 2026,
+            "rendimento_predito_kg_ha": 5840.2,
+            "p10_kg_ha": 4310.0,
+            "p90_kg_ha": 7365.4,
+            "referencia_municipio_kg_ha": 5602.1,
+            "municipio_cod_ibge": 3543402,
+            "distancia_km": 0.0,
+            "solo_origem": "perfil_local",
+            "lag_origem": "perfil_local",
+            "clima_usado": "clima_tipico",
+            "confiavel": True,
+            "avisos": [],
+            "modelo": "HistGradientBoostingRegressor",
+        }
+    })
+
     cultura: str
     ano: int
     rendimento_predito_kg_ha: float
@@ -128,25 +269,62 @@ class PredicaoSimplesResponse(BaseModel):
 
 
 class PredicaoResponse(BaseModel):
-    cultura: str
-    cod_ibge: int
-    ano: int
-    rendimento_predito_kg_ha: float
-    modelo: str
-    features_utilizadas: list[str]
+    """Resultado da predição completa e lista das features fornecidas ao modelo."""
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "cultura": "milho",
+            "cod_ibge": 3500105,
+            "ano": 2026,
+            "rendimento_predito_kg_ha": 5840.2,
+            "modelo": "HistGradientBoostingRegressor",
+            "features_utilizadas": ["chuva_floracao_mm", "cad_mm", "lag1_rel"],
+        }
+    })
+
+    cultura: str = Field(description="Cultura prevista.")
+    cod_ibge: int = Field(description="Código IBGE do município.")
+    ano: int = Field(description="Ano da safra.")
+    rendimento_predito_kg_ha: float = Field(
+        description="Rendimento estimado, em quilogramas por hectare."
+    )
+    modelo: str = Field(description="Nome do estimador usado na predição.")
+    features_utilizadas: list[str] = Field(
+        description="Nomes das features efetivamente entregues ao modelo."
+    )
 
 
 class ModeloInfo(BaseModel):
-    cultura: str
-    modelo: str
-    features: list[str]
-    artefato: str
-    unidade_predicao: str
+    """Metadados de um modelo disponível para uma cultura."""
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "cultura": "milho",
+            "modelo": "HistGradientBoostingRegressor",
+            "features": ["chuva_floracao_mm", "cad_mm", "lag1_rel"],
+            "artefato": "resultados/modelos_cultura/modelo_milho.joblib",
+            "unidade_predicao": "kg/ha",
+        }
+    })
+
+    cultura: str = Field(description="Cultura atendida pelo modelo.")
+    modelo: str = Field(description="Nome do estimador persistido.")
+    features: list[str] = Field(description="Features esperadas pelo estimador.")
+    artefato: str = Field(description="Caminho do artefato carregado no servidor.")
+    unidade_predicao: str = Field(description="Unidade do valor previsto.")
 
 
 class HealthResponse(BaseModel):
-    status: str
-    modelos_disponiveis: int
+    """Estado da API e quantidade de modelos carregáveis."""
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {"status": "ok", "modelos_disponiveis": 9}
+    })
+
+    status: str = Field(description="Estado da aplicação; atualmente, 'ok' indica disponibilidade.")
+    modelos_disponiveis: int = Field(
+        description="Quantidade de culturas com artefatos de modelo disponíveis."
+    )
 
 
 def _diretorio_modelos() -> Path:
@@ -265,16 +443,37 @@ def prever(req: PredicaoRequest) -> PredicaoResponse:
 app = FastAPI(
     title="Agro ML Prediction API",
     version="0.1.0",
-    description="Predição de rendimento agrícola em kg/ha a partir de clima diário e solo.",
+    description=(
+        "API para estimar o rendimento agrícola em kg/ha. "
+        "Use /predicoes/simples quando não possuir clima diário; use /predicoes "
+        "para enviar dados climáticos e de solo completos. A API não coleta dados "
+        "externos durante a requisição."
+    ),
+    contact={"name": "Equipe Agro ML"},
 )
 
 
-@app.get("/health", response_model=HealthResponse, tags=["sistema"])
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["sistema"],
+    summary="Verificar disponibilidade da API",
+    description="Retorna o estado da aplicação e quantos modelos estão disponíveis para predição.",
+)
 def health() -> HealthResponse:
     return HealthResponse(status="ok", modelos_disponiveis=len(_caminhos_modelos()))
 
 
-@app.get("/modelos", response_model=list[ModeloInfo], tags=["modelos"])
+@app.get(
+    "/modelos",
+    response_model=list[ModeloInfo],
+    tags=["modelos"],
+    summary="Listar modelos disponíveis",
+    description=(
+        "Lista as culturas que podem ser previstas e os metadados dos artefatos "
+        "carregados. Use este endpoint antes de enviar uma cultura para /predicoes."
+    ),
+)
 def modelos() -> list[ModeloInfo]:
     return catalogo_modelos()
 
@@ -295,13 +494,34 @@ def prever_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
     )
 
 
-@app.post("/predicoes/simples", response_model=PredicaoSimplesResponse, tags=["predições"])
+@app.post(
+    "/predicoes/simples",
+    response_model=PredicaoSimplesResponse,
+    tags=["predições"],
+    summary="Prever rendimento com dados mínimos",
+    description=(
+        "Estima o rendimento usando cultura, ano e coordenadas. O serviço busca "
+        "o município e o perfil de solo mais apropriados no artefato do modelo, "
+        "e usa clima típico quando não há clima futuro informado. O solo e o "
+        "rendimento relativo do ano anterior são opcionais."
+    ),
+)
 def predicoes_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
-    """Previsão só com cultura, ano, latitude e longitude (solo opcional)."""
     return prever_simples(req)
 
 
-@app.post("/predicoes", response_model=PredicaoResponse, tags=["predições"])
+@app.post(
+    "/predicoes",
+    response_model=PredicaoResponse,
+    tags=["predições"],
+    summary="Prever rendimento com dados climáticos e de solo",
+    description=(
+        "Calcula as features fenológicas a partir do clima diário, combina-as "
+        "com o perfil de solo e aplica o modelo da cultura. Envie uma série "
+        "diária com cobertura suficiente para todas as janelas fenológicas da "
+        "cultura; uma lista curta ou com lacunas pode gerar erro 422."
+    ),
+)
 def predicoes(req: PredicaoRequest) -> PredicaoResponse:
     return prever(req)
 

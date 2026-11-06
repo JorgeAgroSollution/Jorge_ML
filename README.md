@@ -45,6 +45,136 @@ A documentação interativa fica em `http://127.0.0.1:8000/docs`; o catálogo es
 pressão e `umidade_solo_raiz`. A resposta informa o modelo usado e o
 `rendimento_predito_kg_ha`.
 
+### Contrato dos endpoints
+
+Todos os endpoints retornam JSON. Campos extras são rejeitados e erros de entrada
+retornam `422 Unprocessable Entity` com detalhes de validação. O endpoint
+`/health` retorna `200` quando a aplicação está respondendo:
+
+```json
+{
+  "status": "ok",
+  "modelos_disponiveis": 9
+}
+```
+
+`GET /modelos` lista as culturas que podem ser previstas. O campo `features`
+informa as variáveis que serão usadas internamente pelo modelo:
+
+```json
+[
+  {
+    "cultura": "milho",
+    "modelo": "HistGradientBoostingRegressor",
+    "features": ["chuva_floracao_mm", "cad_mm", "lag1_rel"],
+    "artefato": "resultados/modelos_cultura/modelo_milho.joblib",
+    "unidade_predicao": "kg/ha"
+  }
+]
+```
+
+`POST /predicoes/simples` é recomendado quando o consumidor possui apenas a
+cultura, o ano e as coordenadas. O serviço usa o clima típico e o perfil local
+armazenados no artefato; `solo` e `lag1_rel` podem ser informados para substituir
+essas referências:
+
+```json
+{
+  "cultura": "milho",
+  "ano": 2026,
+  "latitude": -21.17,
+  "longitude": -47.81,
+  "solo": {
+    "ph_h2o": 5.5,
+    "argila": 350,
+    "prof_max_cm": 100
+  },
+  "lag1_rel": 0.02
+}
+```
+
+Exemplo de resposta:
+
+```json
+{
+  "cultura": "milho",
+  "ano": 2026,
+  "rendimento_predito_kg_ha": 5840.2,
+  "p10_kg_ha": 4310.0,
+  "p90_kg_ha": 7365.4,
+  "referencia_municipio_kg_ha": 5602.1,
+  "municipio_cod_ibge": 3543402,
+  "distancia_km": 0.0,
+  "solo_origem": "perfil_local",
+  "lag_origem": "perfil_local",
+  "clima_usado": "clima_tipico",
+  "confiavel": true,
+  "avisos": [],
+  "modelo": "HistGradientBoostingRegressor"
+}
+```
+
+`POST /predicoes` é a opção para consumidores que possuem dados observados.
+Além de `cultura` e `ano`, envie `municipio`, `solo`, `lag1_rel` e a série
+`clima_diario`. Cada registro climático usa data `AAAA-MM-DD`, temperatura em
+°C, precipitação em mm, radiação em MJ/m²/dia, vento em m/s e pressão em kPa.
+A lista deve cobrir todos os dias necessários às janelas fenológicas da cultura,
+sem enviar apenas uma amostra parcial:
+
+```json
+{
+  "cultura": "milho",
+  "ano": 2026,
+  "municipio": {
+    "cod_ibge": 3500105,
+    "latitude": -22.3,
+    "longitude": -48.3
+  },
+  "solo": {
+    "ph_h2o": 5.5,
+    "carbono_organico": 15,
+    "ctc": 80,
+    "saturacao_bases": 50,
+    "aluminio": 2,
+    "argila": 350,
+    "silte": 250,
+    "prof_max_cm": 100
+  },
+  "lag1_rel": 0.0,
+  "clima_diario": [
+    {
+      "data": "2025-10-01",
+      "temp_media": 23,
+      "temp_max": 30,
+      "temp_min": 17,
+      "precip_mm": 4,
+      "umidade_rel": 70,
+      "radiacao_mj": 20,
+      "vento_ms": 2,
+      "ps_kpa": 95,
+      "umidade_solo_raiz": 0.6
+    }
+  ]
+}
+```
+
+A resposta da predição completa identifica o município, o modelo e as features
+usadas:
+
+```json
+{
+  "cultura": "milho",
+  "cod_ibge": 3500105,
+  "ano": 2026,
+  "rendimento_predito_kg_ha": 5840.2,
+  "modelo": "HistGradientBoostingRegressor",
+  "features_utilizadas": ["chuva_floracao_mm", "cad_mm", "lag1_rel"]
+}
+```
+
+Para consultar o contrato gerado automaticamente, abra `/docs` (Swagger UI),
+`/redoc` (ReDoc) ou `/openapi.json` após iniciar a API.
+
 Os caminhos podem ser sobrescritos com `AGRO_ML_MODELOS_DIR` e
 `AGRO_ML_MODELO_SOJA`. A API não faz coleta externa durante a requisição; os dados
 diários devem ser preparados pelo consumidor ou por uma etapa de coleta separada.
