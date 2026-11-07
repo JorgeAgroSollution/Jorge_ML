@@ -16,8 +16,19 @@
 | `test_predicao.py` | Testes do treino com artefatos fixos e da previsão por latitude/longitude. |
 
 ## Uso
+As dependências ficam em grupos no `pyproject.toml`:
+
+| Grupo | Para quê | Instalação |
+|---|---|---|
+| principal | só a API (fastapi, uvicorn, pandas, numpy, pyarrow, scikit-learn 1.9.1, joblib) | `uv sync --no-dev` ou `pip install -r requirements.txt` |
+| `dev` | testes (pytest, httpx) | `uv sync` (padrão) |
+| `pipeline` | coleta e treino (agrobr, geopandas) | `uv sync --all-groups` |
+| `notebook` | análise exploratória em `EDA/` (matplotlib, seaborn, ipykernel, jupytext) | `uv sync --all-groups` |
+
+O scikit-learn fica fixo na versão que gerou os `.joblib`; trocar a versão exige treinar de novo.
+
 ```bash
-pip install -r requirements.txt
+uv sync --all-groups
 python build_dataset.py --pam-csv data/raw/df_market_pam.csv     # ou --coletar-pam
 python avaliar.py --dados data/processed/dataset_completo.csv
 python avaliar.py --dados df_merged.csv --legado                  # avalia o CSV antigo com o método novo
