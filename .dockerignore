@@ -1,0 +1,14 @@
+# A imagem só leva a API e os artefatos (ver Dockerfile).
+.git
+.github
+.venv
+__pycache__
+*.py[oc]
+.pytest_cache
+data/
+EDA/
+*.ipynb
+*.patch
+resultados/*.csv
+resultados/*.json
+resultados/modelo_soja_final.joblib
