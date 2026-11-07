@@ -144,7 +144,7 @@ sem enviar apenas uma amostra parcial:
   "solo": {
     "ph_h2o": 5.5,
     "carbono_organico": 15,
-    "ctc": 80,
+    "ctc": 8,
     "saturacao_bases": 50,
     "aluminio": 2,
     "argila": 350,

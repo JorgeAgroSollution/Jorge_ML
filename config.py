@@ -42,6 +42,15 @@ DISTANCIA_MAX_KM = 150.0  # além disso o ponto está fora da área coberta => r
 HORIZONTE_AVISO_ANOS = 3  # anos além do último dado em que a tendência é só extrapolada => aviso
 SKILL_MINIMO = 0.03  # ganho mínimo (3% menos erro) sobre a melhor regra simples para o modelo ser 'confiável'
 
+# --- Laudo de solo do IAC -> unidades do modelo (predicao.solo_do_laudo) ------------------------
+# O modelo foi treinado com os perfis Embrapa: pH em água, carbono orgânico em g/kg e CTC em cmolc/dm3
+# (data/processed: `ctc_cmolc_dm3`, mediana ~7,9). O laudo de rotina do IAC traz pH em CaCl2, matéria
+# orgânica em g/dm3 e CTC em mmolc/dm3. A CTC é só troca de unidade (10 mmolc = 1 cmolc); as duas
+# premissas abaixo são aproximações. REVISAR COM AGRÔNOMO.
+PH_H2O_MENOS_CACL2 = 0.6  # pH em água ~ pH em CaCl2 + 0,6 (diferença típica de 0,5 a 0,7 em solos tropicais)
+FATOR_MO_PARA_CARBONO = 1.724  # Van Bemmelen: a matéria orgânica tem ~58% de carbono (C = MO / 1,724)
+DENSIDADE_SOLO_KG_DM3 = 1.0  # para ler g/dm3 do laudo como g/kg (terra fina seca ao ar ~1 kg/dm3)
+
 # --- Quebras de série documentadas na PAM/IBGE (agrobr.ibge.pam) -------------------------------
 # laranja <= 2000: rendimento em frutos/ha (mil frutos), não kg/ha.
 # café <= 2001: "em coco"; a partir de 2002: "beneficiado". Sem conversão implícita.
