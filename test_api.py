@@ -29,7 +29,7 @@ def _payload(cultura="milho", ano=2020):
         "solo": {
             "ph_h2o": 5.5,
             "carbono_organico": 15,
-            "ctc": 80,
+            "ctc": 8,
             "saturacao_bases": 50,
             "aluminio": 2,
             "argila": 350,

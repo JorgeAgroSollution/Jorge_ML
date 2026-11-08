@@ -14,10 +14,24 @@
 | `predicao.py` | Previsão com o mínimo de dados do agricultor (cultura, ano, latitude, longitude; solo opcional), usando só o que está no artefato. |
 | `test_pipeline.py` | Testes, inclusive recuperação de sinal em dados sintéticos. |
 | `test_predicao.py` | Testes do treino com artefatos fixos e da previsão por latitude/longitude. |
+| `exportar_previsoes.py` | Exporta as previsões pré-calculadas (cultura × município × 3 anos) para o Jorge. |
+| `test_integracao.py` | Testes do lote, da exportação, do laudo do IAC e da versão do modelo. |
+| `Dockerfile` | Imagem só da API (grupo principal), sem dados brutos nem notebooks. |
 
 ## Uso
+As dependências ficam em grupos no `pyproject.toml`:
+
+| Grupo | Para quê | Instalação |
+|---|---|---|
+| principal | só a API (fastapi, uvicorn, pandas, numpy, pyarrow, scikit-learn 1.9.1, joblib) | `uv sync --no-dev` ou `pip install -r requirements.txt` |
+| `dev` | testes (pytest, httpx) | `uv sync` (padrão) |
+| `pipeline` | coleta e treino (agrobr, geopandas) | `uv sync --all-groups` |
+| `notebook` | análise exploratória em `EDA/` (matplotlib, seaborn, ipykernel, jupytext) | `uv sync --all-groups` |
+
+O scikit-learn fica fixo na versão que gerou os `.joblib`; trocar a versão exige treinar de novo.
+
 ```bash
-pip install -r requirements.txt
+uv sync --all-groups
 python build_dataset.py --pam-csv data/raw/df_market_pam.csv     # ou --coletar-pam
 python avaliar.py --dados data/processed/dataset_completo.csv
 python avaliar.py --dados df_merged.csv --legado                  # avalia o CSV antigo com o método novo
@@ -133,7 +147,7 @@ sem enviar apenas uma amostra parcial:
   "solo": {
     "ph_h2o": 5.5,
     "carbono_organico": 15,
-    "ctc": 80,
+    "ctc": 8,
     "saturacao_bases": 50,
     "aluminio": 2,
     "argila": 350,
@@ -216,9 +230,71 @@ clima típico; o município usado é o mais próximo **com dado da cultura** (av
 150 km); anos além de `ano_ultimo + 3` só extrapolam a tendência. Artefatos gerados antes desta versão não têm
 `perfil_local`: rode `uv run python modelar_culturas.py` de novo.
 
+### Respostas: versão do modelo e códigos dos avisos
+
+`/modelos` traz `versao` (sha256 curto, 12 caracteres, do arquivo do artefato) e `ano_ultimo`.
+`/predicoes/simples` e `/predicoes` trazem `versao_modelo` e `ano_ultimo`. Além do texto em `avisos`,
+`/predicoes/simples` devolve `avisos_codigos`, na mesma ordem, para o consumidor escrever o próprio texto:
+
+| Código | Quando |
+|---|---|
+| `distancia` | o município mais próximo com dado da cultura está a mais de 50 km |
+| `sem_lag` | sem o rendimento do ano anterior: usada a média histórica do município |
+| `extrapolacao` | ano além de `ano_ultimo + 3`: a tendência é só extrapolada |
+| `nao_confiavel` | o modelo não superou a regra simples nessa situação: prefira `referencia_municipio_kg_ha` |
+
+### Várias culturas de uma vez
+
+`POST /predicoes/lote` recebe `culturas` (lista), `ano`, `latitude`, `longitude` e `solo` opcional. Cada item de
+`resultados` traz a `previsao` (igual à de `/predicoes/simples`) ou o `erro`; uma cultura sem modelo ou fora da
+área não derruba as outras.
+
+### Solo do laudo do IAC
+
+O modelo foi treinado com os perfis Embrapa: pH em água, carbono orgânico em g/kg e **CTC e alumínio em
+cmolc/dm³** (coluna `ctc_cmolc_dm3`, mediana ~7,9). O laudo de rotina do IAC usa outras unidades, então o
+`solo` aceita também:
+
+| Campo do laudo | Vira | Conversão (`config.py`, revisar com agrônomo) |
+|---|---|---|
+| `ph_cacl2` | `ph_h2o` | + `PH_H2O_MENOS_CACL2` (0,6) |
+| `materia_organica_g_dm3` | `carbono_organico` | ÷ `DENSIDADE_SOLO_KG_DM3` (1) ÷ `FATOR_MO_PARA_CARBONO` (1,724) |
+| `ctc_mmolc_dm3` | `ctc` | ÷ 10 (só unidade) |
+
+Se o campo do modelo também vier, ele tem prioridade.
+
+## Integração com o Jorge
+
+O Jorge (a plataforma web do projeto) mostra a produtividade esperada no cadastro da safra,
+na Análise por nível, na Precificação e no Agrobot. Para a versão publicada não precisar de um serviço Python
+no ar, o caminho principal é uma **tabela pré-calculada**:
+
+1. `uv run python exportar_previsoes.py` grava `resultados/previsoes_jorge.json`: para cada cultura, cada
+   município do `perfil_local` e os anos `ano_ultimo + 1` até `ano_ultimo + 3`, o mesmo cálculo de
+   `/predicoes/simples` no ponto do município. Campos de cada linha: `cultura`, `cod_ibge`, `municipio`,
+   `lat`, `lon`, `ano`, `kg_ha`, `p10_kg_ha`, `p90_kg_ha`, `referencia_kg_ha`, `confiavel`, `lag_origem`
+   (`observado` ou `media`) e `extrapolado` (só aparece quando é verdadeiro; com os 3 anos padrão nunca é,
+   e o campo sempre falso fazia o arquivo passar de 3 MB). Hoje: 13.344 linhas, ~2,9 MB.
+2. A `versao` do arquivo é um sha256 curto das versões dos artefatos e do formato: só muda quando algum
+   modelo é treinado de novo. O Jorge troca a tabela inteira quando a versão muda.
+3. Copie o arquivo para o Jorge em `apps/api/src/modules/integracoes/produtividade/previsoes-ml.json` e rode
+   `pnpm db:migrate` lá.
+
+**Serviço opcional (desenvolvimento).** Com `ML_API_URL` definido no `.env` da api do Jorge, ele chama o
+`/predicoes/simples` desta API e, se falhar, volta para a tabela. Para subir esta API pelo Docker:
+
+```bash
+docker build -t jorge-ml .
+docker run --rm -p 8000:8000 jorge-ml      # GET http://127.0.0.1:8000/health
+```
+
+**Regenerar depois de treinar de novo:** `uv sync --all-groups`, `uv run python modelar_culturas.py`,
+`uv run python exportar_previsoes.py` e copiar o JSON para o Jorge.
+
 ## O que foi testado aqui (sem rede)
 - Física (ETo, balanço hídrico), janelas, limpeza, tendência, lag sem vazamento e avaliação: `test_pipeline.py` passa.
 - Avaliação aplicada ao `df_merged.csv` antigo: ver `resultados/metricas.csv`.
+- Lote, exportação para o Jorge, conversões do laudo do IAC e versão do modelo: `test_integracao.py`.
 
 ## O que NÃO foi testado (requer rede/dados reais) — validar na primeira execução
 1. `coletar_diario` (agrobr NASA POWER diário com `parameters=[... 'PS','GWETROOT']`) e `construir_referencia` (malha IBGE + geopandas).

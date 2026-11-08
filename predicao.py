@@ -1,3 +1,9 @@
+"""Predição com o mínimo de dados do agricultor: cultura, ano, latitude e longitude (solo é opcional).
+
+Tudo o que o agricultor não precisa informar (clima típico, solo e histórico do município) foi calculado no
+treino e está no `perfil_local` do artefato. Nada é baixado na hora da previsão.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -16,6 +22,44 @@ SOLO_CAMPOS = (
     "silte",
     "prof_max_cm",
 )
+
+# Códigos estáveis dos avisos, para o consumidor escrever o próprio texto (o campo `avisos` segue em pt-BR).
+AVISO_DISTANCIA = "distancia"  # município mais próximo com dado da cultura além de DISTANCIA_AVISO_KM
+AVISO_SEM_LAG = "sem_lag"  # sem o rendimento do ano anterior: usada a média histórica do município
+AVISO_EXTRAPOLACAO = "extrapolacao"  # ano além de ano_ultimo + HORIZONTE_AVISO_ANOS
+AVISO_NAO_CONFIAVEL = "nao_confiavel"  # o modelo não superou a regra simples: prefira a referência
+
+
+def ph_h2o_de_cacl2(ph_cacl2: float) -> float:
+    """pH em água estimado a partir do pH em CaCl2 do laudo do IAC (premissa em config.py)."""
+    return ph_cacl2 + C.PH_H2O_MENOS_CACL2
+
+
+def carbono_de_materia_organica(mo_g_dm3: float) -> float:
+    """Carbono orgânico (g/kg) a partir da matéria orgânica do laudo (g/dm3), pelo fator de Van Bemmelen."""
+    return mo_g_dm3 / C.DENSIDADE_SOLO_KG_DM3 / C.FATOR_MO_PARA_CARBONO
+
+
+def ctc_cmolc_de_mmolc(ctc_mmolc_dm3: float) -> float:
+    """CTC do laudo do IAC (mmolc/dm3) na unidade do modelo (cmolc/dm3): 10 mmolc = 1 cmolc."""
+    return ctc_mmolc_dm3 / 10.0
+
+
+def solo_do_laudo(solo: dict | None) -> dict | None:
+    """Converte os campos do laudo do IAC para os do modelo. O campo já na unidade do modelo tem prioridade."""
+    if not solo:
+        return solo
+    conversoes = {
+        "ph_cacl2": ("ph_h2o", ph_h2o_de_cacl2),
+        "materia_organica_g_dm3": ("carbono_organico", carbono_de_materia_organica),
+        "ctc_mmolc_dm3": ("ctc", ctc_cmolc_de_mmolc),
+    }
+    saida = {k: v for k, v in solo.items() if k not in conversoes}
+    for campo, (destino, converter) in conversoes.items():
+        valor = solo.get(campo)
+        if valor is not None and saida.get(destino) is None:
+            saida[destino] = converter(float(valor))
+    return saida
 
 
 def construir_perfil_local(df: pd.DataFrame, features: list[str], tend) -> pd.DataFrame:
@@ -109,15 +153,17 @@ def montar_entrada(
             "fora da área coberta pelo modelo."
         )
     avisos: list[str] = []
+    codigos: list[str] = []
     if dist > C.DISTANCIA_AVISO_KM:
         avisos.append(
             f"O município mais próximo com dados desta cultura fica a {dist:.0f} km; a previsão é regional."
         )
+        codigos.append(AVISO_DISTANCIA)
 
     valores = linha.to_dict()
     informado = {
         k: float(v)
-        for k, v in (solo or {}).items()
+        for k, v in (solo_do_laudo(solo) or {}).items()
         if v is not None and k in SOLO_CAMPOS
     }
     valores.update(informado)
@@ -144,6 +190,7 @@ def montar_entrada(
             "Sem o rendimento do ano anterior neste município: usada a média histórica local "
             "(a previsão fica menos precisa)."
         )
+        codigos.append(AVISO_SEM_LAG)
     valores["lag1_rel"] = lag
 
     entrada = pd.DataFrame([{f: valores.get(f, np.nan) for f in artefato["features"]}])
@@ -154,8 +201,45 @@ def montar_entrada(
         "lag_origem": lag_origem,
         "anom_mun": float(linha["anom_mun"]),
         "avisos": avisos,
+        "avisos_codigos": codigos,
     }
     return entrada, contexto
+
+
+def resultado_previsao(artefato: dict, ano: int, ctx: dict, saida: float) -> dict:
+    """Monta a resposta (kg/ha, faixa P10–P90, referência, avisos) a partir da saída do modelo e do contexto."""
+    base = tendencia_log(artefato, ano)
+    lo, hi = artefato.get("intervalo_log", (np.nan, np.nan))
+    avisos = list(ctx["avisos"])
+    codigos = list(ctx.get("avisos_codigos", []))
+
+    if ano - artefato.get("ano_ultimo", ano) > C.HORIZONTE_AVISO_ANOS:
+        avisos.append(
+            f"Ano além de {artefato['ano_ultimo']}: a tendência de produtividade é apenas extrapolada."
+        )
+        codigos.append(AVISO_EXTRAPOLACAO)
+    sem_historico = ctx["lag_origem"].startswith("média")
+    ok = confiavel(artefato, sem_historico)
+    if not ok:
+        avisos.append(
+            "Nos testes com dados históricos este modelo não superou a regra simples "
+            "(tendência + média do município) nesta situação. Prefira a referência do município."
+        )
+        codigos.append(AVISO_NAO_CONFIAVEL)
+    return {
+        "rendimento_predito_kg_ha": float(np.exp(base + saida)),
+        "p10_kg_ha": float(np.exp(base + saida + lo)),
+        "p90_kg_ha": float(np.exp(base + saida + hi)),
+        "referencia_municipio_kg_ha": float(np.exp(base + ctx["anom_mun"])),
+        "municipio_cod_ibge": ctx["cod_ibge"],
+        "distancia_km": round(ctx["distancia_km"], 1),
+        "solo_origem": ctx["solo_origem"],
+        "lag_origem": ctx["lag_origem"],
+        "clima_usado": "típico (mediana dos anos de treino)",
+        "confiavel": ok,
+        "avisos": avisos,
+        "avisos_codigos": codigos,
+    }
 
 
 def prever_simples(
@@ -169,31 +253,4 @@ def prever_simples(
     """Previsão de rendimento (kg/ha) com faixa P10–P90, usando só os dados informados + o artefato."""
     entrada, ctx = montar_entrada(artefato, ano, lat, lon, solo, lag1_rel)
     saida = float(artefato["modelo"].predict(entrada)[0])
-    base = tendencia_log(artefato, ano)
-    lo, hi = artefato.get("intervalo_log", (np.nan, np.nan))
-    avisos = list(ctx["avisos"])
-
-    if ano - artefato.get("ano_ultimo", ano) > C.HORIZONTE_AVISO_ANOS:
-        avisos.append(
-            f"Ano além de {artefato['ano_ultimo']}: a tendência de produtividade é apenas extrapolada."
-        )
-    sem_historico = ctx["lag_origem"].startswith("média")
-    ok = confiavel(artefato, sem_historico)
-    if not ok:
-        avisos.append(
-            "Nos testes com dados históricos este modelo não superou a regra simples "
-            "(tendência + média do município) nesta situação. Prefira a referência do município."
-        )
-    return {
-        "rendimento_predito_kg_ha": float(np.exp(base + saida)),
-        "p10_kg_ha": float(np.exp(base + saida + lo)),
-        "p90_kg_ha": float(np.exp(base + saida + hi)),
-        "referencia_municipio_kg_ha": float(np.exp(base + ctx["anom_mun"])),
-        "municipio_cod_ibge": ctx["cod_ibge"],
-        "distancia_km": round(ctx["distancia_km"], 1),
-        "solo_origem": ctx["solo_origem"],
-        "lag_origem": ctx["lag_origem"],
-        "clima_usado": "típico (mediana dos anos de treino)",
-        "confiavel": ok,
-        "avisos": avisos,
-    }
+    return resultado_previsao(artefato, ano, ctx, saida)

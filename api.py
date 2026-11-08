@@ -6,6 +6,7 @@ Execute com:
 
 from __future__ import annotations
 
+import hashlib
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -54,10 +55,10 @@ class SoloEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     ph_h2o: float = Field(description="pH medido em água.")
-    carbono_organico: float = Field(description="Teor de carbono orgânico do solo.")
-    ctc: float = Field(description="Capacidade de troca catiônica.")
+    carbono_organico: float = Field(description="Carbono orgânico do solo, em g/kg.")
+    ctc: float = Field(description="Capacidade de troca catiônica, em cmolc/dm³ (não mmolc).")
     saturacao_bases: float = Field(description="Saturação por bases, em porcentagem.")
-    aluminio: float = Field(description="Teor de alumínio do solo.")
+    aluminio: float = Field(description="Alumínio trocável, em cmolc/dm³.")
     argila: float = Field(description="Teor de argila, em g/kg.")
     silte: float = Field(description="Teor de silte, em g/kg.")
     prof_max_cm: float = Field(
@@ -94,7 +95,7 @@ class PredicaoRequest(BaseModel):
                 "solo": {
                     "ph_h2o": 5.5,
                     "carbono_organico": 15,
-                    "ctc": 80,
+                    "ctc": 8,
                     "saturacao_bases": 50,
                     "aluminio": 2,
                     "argila": 350,
@@ -161,16 +162,33 @@ class SoloOpcional(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     ph_h2o: float | None = Field(default=None, description="pH medido em água.")
-    carbono_organico: float | None = Field(default=None, description="Teor de carbono orgânico.")
-    ctc: float | None = Field(default=None, description="Capacidade de troca catiônica.")
+    carbono_organico: float | None = Field(
+        default=None, description="Carbono orgânico, em g/kg."
+    )
+    ctc: float | None = Field(
+        default=None, description="Capacidade de troca catiônica, em cmolc/dm³ (não mmolc)."
+    )
     saturacao_bases: float | None = Field(
         default=None, description="Saturação por bases, em porcentagem."
     )
-    aluminio: float | None = Field(default=None, description="Teor de alumínio do solo.")
+    aluminio: float | None = Field(default=None, description="Alumínio trocável, em cmolc/dm³.")
     argila: float | None = Field(default=None, description="Teor de argila, em g/kg.")
     silte: float | None = Field(default=None, description="Teor de silte, em g/kg.")
     prof_max_cm: float | None = Field(
         default=None, ge=0, description="Profundidade máxima representada, em cm."
+    )
+    # Campos do laudo de rotina do IAC, convertidos por predicao.solo_do_laudo (premissas em config.py).
+    # Se o campo equivalente do modelo também vier, ele tem prioridade.
+    ph_cacl2: float | None = Field(
+        default=None, description="pH em CaCl2 (laudo do IAC); vira ph_h2o somando PH_H2O_MENOS_CACL2."
+    )
+    materia_organica_g_dm3: float | None = Field(
+        default=None,
+        ge=0,
+        description="Matéria orgânica em g/dm³ (laudo do IAC); vira carbono_organico (÷ 1,724).",
+    )
+    ctc_mmolc_dm3: float | None = Field(
+        default=None, ge=0, description="CTC em mmolc/dm³ (laudo do IAC); vira ctc em cmolc/dm³ (÷ 10)."
     )
 
 
@@ -248,7 +266,10 @@ class PredicaoSimplesResponse(BaseModel):
             "clima_usado": "clima_tipico",
             "confiavel": True,
             "avisos": [],
+            "avisos_codigos": [],
             "modelo": "HistGradientBoostingRegressor",
+            "versao_modelo": "3f9a1c2b7d4e",
+            "ano_ultimo": 2025,
         }
     })
 
@@ -265,7 +286,56 @@ class PredicaoSimplesResponse(BaseModel):
     clima_usado: str
     confiavel: bool
     avisos: list[str]
+    avisos_codigos: list[str] = Field(
+        description=(
+            "Códigos estáveis dos avisos, na mesma ordem: distancia, sem_lag, extrapolacao, nao_confiavel."
+        )
+    )
     modelo: str
+    versao_modelo: str = Field(description="sha256 curto (12 caracteres) do artefato usado.")
+    ano_ultimo: int | None = Field(description="Último ano com dado observado no treino.")
+
+
+class PredicaoLoteRequest(BaseModel):
+    """Várias culturas para o mesmo ponto e ano numa chamada só."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "culturas": ["milho", "feijao", "cafe"],
+                "ano": 2026,
+                "latitude": -22.82,
+                "longitude": -47.04,
+            }
+        },
+    )
+
+    culturas: list[str] = Field(
+        min_length=1,
+        max_length=len(C.CULTURAS),
+        description="Culturas a prever. Uma cultura desconhecida vira erro só no item dela.",
+    )
+    ano: int = Field(ge=C.ANO_INICIAL, le=C.ANO_FINAL + 10, description="Ano da safra.")
+    latitude: float = Field(ge=-90, le=90, description="Latitude do local, em graus.")
+    longitude: float = Field(ge=-180, le=180, description="Longitude do local, em graus.")
+    solo: SoloOpcional | None = Field(
+        default=None, description="Dados do talhão, aplicados a todas as culturas."
+    )
+
+
+class PredicaoLoteItem(BaseModel):
+    """Resultado de uma cultura do lote: a previsão ou o motivo do erro."""
+
+    cultura: str
+    previsao: PredicaoSimplesResponse | None = None
+    erro: str | None = Field(default=None, description="Motivo quando não houve previsão.")
+
+
+class PredicaoLoteResponse(BaseModel):
+    """Um item por cultura pedida, na mesma ordem."""
+
+    resultados: list[PredicaoLoteItem]
 
 
 class PredicaoResponse(BaseModel):
@@ -279,6 +349,8 @@ class PredicaoResponse(BaseModel):
             "rendimento_predito_kg_ha": 5840.2,
             "modelo": "HistGradientBoostingRegressor",
             "features_utilizadas": ["chuva_floracao_mm", "cad_mm", "lag1_rel"],
+            "versao_modelo": "3f9a1c2b7d4e",
+            "ano_ultimo": 2025,
         }
     })
 
@@ -292,6 +364,8 @@ class PredicaoResponse(BaseModel):
     features_utilizadas: list[str] = Field(
         description="Nomes das features efetivamente entregues ao modelo."
     )
+    versao_modelo: str = Field(description="sha256 curto (12 caracteres) do artefato usado.")
+    ano_ultimo: int | None = Field(description="Último ano com dado observado no treino.")
 
 
 class ModeloInfo(BaseModel):
@@ -304,6 +378,8 @@ class ModeloInfo(BaseModel):
             "features": ["chuva_floracao_mm", "cad_mm", "lag1_rel"],
             "artefato": "resultados/modelos_cultura/modelo_milho.joblib",
             "unidade_predicao": "kg/ha",
+            "versao": "3f9a1c2b7d4e",
+            "ano_ultimo": 2025,
         }
     })
 
@@ -312,6 +388,8 @@ class ModeloInfo(BaseModel):
     features: list[str] = Field(description="Features esperadas pelo estimador.")
     artefato: str = Field(description="Caminho do artefato carregado no servidor.")
     unidade_predicao: str = Field(description="Unidade do valor previsto.")
+    versao: str = Field(description="sha256 curto (12 caracteres) do arquivo do artefato.")
+    ano_ultimo: int | None = Field(description="Último ano com dado observado no treino.")
 
 
 class HealthResponse(BaseModel):
@@ -348,6 +426,15 @@ def _caminhos_modelos() -> dict[str, Path]:
     return caminhos
 
 
+def versao_artefato(caminho: Path) -> str:
+    """sha256 curto (12 caracteres) do arquivo do artefato: muda sempre que o modelo for treinado de novo."""
+    h = hashlib.sha256()
+    with open(caminho, "rb") as arquivo:
+        for bloco in iter(lambda: arquivo.read(1 << 20), b""):
+            h.update(bloco)
+    return h.hexdigest()[:12]
+
+
 @lru_cache(maxsize=None)
 def _carregar(cultura: str) -> dict:
     caminho = _caminhos_modelos().get(cultura)
@@ -367,6 +454,8 @@ def _carregar(cultura: str) -> dict:
         "modelo_nome": artefato.get("modelo_nome", type(modelo).__name__),
         "caminho": caminho,
         "unidade_predicao": artefato.get("unidade_predicao", "kg/ha"),
+        "versao": versao_artefato(caminho),
+        "ano_ultimo": artefato.get("ano_ultimo"),
         "bruto": artefato,
     }
 
@@ -385,6 +474,8 @@ def catalogo_modelos() -> list[ModeloInfo]:
                 features=artefato["features"],
                 artefato=str(caminho),
                 unidade_predicao=artefato["unidade_predicao"],
+                versao=artefato["versao"],
+                ano_ultimo=artefato["ano_ultimo"],
             )
         )
     return resultado
@@ -437,6 +528,8 @@ def prever(req: PredicaoRequest) -> PredicaoResponse:
         rendimento_predito_kg_ha=rendimento,
         modelo=artefato["modelo_nome"],
         features_utilizadas=artefato["features"],
+        versao_modelo=artefato["versao"],
+        ano_ultimo=artefato["ano_ultimo"],
     )
 
 
@@ -490,7 +583,12 @@ def prever_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Falha inesperada durante a predição.") from exc
     return PredicaoSimplesResponse(
-        cultura=req.cultura, ano=req.ano, modelo=artefato["modelo_nome"], **saida
+        cultura=req.cultura,
+        ano=req.ano,
+        modelo=artefato["modelo_nome"],
+        versao_modelo=artefato["versao"],
+        ano_ultimo=artefato["ano_ultimo"],
+        **saida,
     )
 
 
@@ -510,6 +608,40 @@ def predicoes_simples(req: PredicaoSimplesRequest) -> PredicaoSimplesResponse:
     return prever_simples(req)
 
 
+def prever_lote(req: PredicaoLoteRequest) -> PredicaoLoteResponse:
+    """Prevê cada cultura isolada: o erro de uma não derruba as outras."""
+    resultados = []
+    for cultura in req.culturas:
+        try:
+            simples = PredicaoSimplesRequest(
+                cultura=cultura,
+                ano=req.ano,
+                latitude=req.latitude,
+                longitude=req.longitude,
+                solo=req.solo,
+            )
+            resultados.append(PredicaoLoteItem(cultura=cultura, previsao=prever_simples(simples)))
+        except HTTPException as exc:
+            resultados.append(PredicaoLoteItem(cultura=cultura, erro=str(exc.detail)))
+        except ValueError:  # cultura fora do catálogo (validação do PredicaoSimplesRequest)
+            resultados.append(PredicaoLoteItem(cultura=cultura, erro=f"Cultura não suportada: {cultura}"))
+    return PredicaoLoteResponse(resultados=resultados)
+
+
+@app.post(
+    "/predicoes/lote",
+    response_model=PredicaoLoteResponse,
+    tags=["predições"],
+    summary="Prever várias culturas no mesmo ponto",
+    description=(
+        "Mesmo cálculo de /predicoes/simples para cada cultura da lista, no mesmo ponto e ano. "
+        "Cada item traz a previsão ou o erro; uma cultura com erro não derruba as outras."
+    ),
+)
+def predicoes_lote(req: PredicaoLoteRequest) -> PredicaoLoteResponse:
+    return prever_lote(req)
+
+
 @app.post(
     "/predicoes",
     response_model=PredicaoResponse,
@@ -526,4 +658,4 @@ def predicoes(req: PredicaoRequest) -> PredicaoResponse:
     return prever(req)
 
 
-__all__ = ["app", "catalogo_modelos", "prever", "prever_simples"]
+__all__ = ["app", "catalogo_modelos", "prever", "prever_lote", "prever_simples", "versao_artefato"]
